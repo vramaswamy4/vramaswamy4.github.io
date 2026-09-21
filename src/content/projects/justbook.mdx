@@ -47,8 +47,8 @@ A deliberate monolith: one Flask API, one PostgreSQL database, one React app. Wi
 - **Backend.** Python, Flask and SQLAlchemy on Render as three services: API, background worker and cron. PostgreSQL 16 with Alembic migrations run without downtime. Redis alongside it. Off-platform backups every day, with restore drills.
 - **Frontend.** React 19 and Vite. Every screen was designed in Figma before it was built.
 - **Mobile.** The same app on iOS and Android through Capacitor, with native Tap to Pay, push notifications (APNs and FCM), passkeys and barcode scanning.
-- **Edge and storage.** Cloudflare Workers, AWS S3, Sentry, and a staging environment that mirrors production.
-- **Messaging.** Transactional email, Twilio SMS, and WhatsApp with 34 Meta-approved templates.
+- **Edge and storage.** Cloudflare Workers at the edge. Uploads live in AWS S3 and are served through CloudFront, with a separate bucket and distribution for staging. Sentry for errors, and a staging environment that mirrors production.
+- **Messaging.** Transactional email, Twilio SMS, and WhatsApp with 34 Meta-approved templates. AWS SES bounce and complaint events come back to the API through an SNS topic subscribed to a webhook.
 
 ## The availability engine
 

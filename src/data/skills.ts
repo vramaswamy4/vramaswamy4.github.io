@@ -51,6 +51,8 @@ export const skillGroups: SkillGroup[] = [
       { name: 'Cloudflare Workers', icon: 'cloudflareworkers' },
       { name: 'AWS S3', icon: 'bucket' },
       { name: 'AWS SES', icon: 'mail' },
+      { name: 'AWS CloudFront', icon: 'globe' },
+      { name: 'AWS SNS', icon: 'bell' },
       { name: 'Google Cloud', icon: 'googlecloud' },
       { name: 'Render', icon: 'render' },
       { name: 'Sentry', icon: 'sentry' },
