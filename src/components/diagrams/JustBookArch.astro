@@ -3,38 +3,47 @@ import ArchDiagram from '../ArchDiagram.astro';
 import type { DNode, DEdge } from '../ArchDiagram.astro';
 
 const nodes: DNode[] = [
-  { id: 'clients', label: '', x: 20, y: 50, w: 200, h: 270, kind: 'ghost' },
-  { id: 'web', label: 'Admin web app', sub: 'React 19 · Vite', x: 40, y: 90, w: 160, h: 54, kind: 'client' },
-  { id: 'mobile', label: 'iOS + Android', sub: 'Capacitor · Tap to Pay', x: 40, y: 162, w: 160, h: 54, kind: 'client' },
-  { id: 'public', label: 'Booking pages', sub: 'one per business', x: 40, y: 234, w: 160, h: 54, kind: 'client' },
-  { id: 'api', label: 'Flask API', sub: '632 endpoints · 52 blueprints', x: 330, y: 84, w: 220, h: 84 },
-  { id: 'worker', label: 'Worker', sub: 'background jobs', x: 330, y: 212, w: 220, h: 54 },
-  { id: 'cron', label: 'Cron', sub: 'scheduled jobs', x: 330, y: 288, w: 220, h: 54 },
-  { id: 'pg', label: 'PostgreSQL 16', sub: '127 tables · advisory locks', x: 700, y: 24, w: 230, h: 54, kind: 'store' },
-  { id: 'redis', label: 'Redis', x: 700, y: 96, w: 230, h: 44, kind: 'store' },
-  { id: 's3', label: 'S3 + CloudFront', x: 700, y: 158, w: 230, h: 44, kind: 'store' },
-  { id: 'stripe', label: 'Stripe', sub: 'Subscriptions · Connect · Terminal', x: 700, y: 226, w: 230, h: 54, kind: 'external' },
-  { id: 'msg', label: 'Messaging', sub: 'email · SMS · WhatsApp · push', x: 700, y: 304, w: 230, h: 54, kind: 'external' },
+  // Clients
+  { id: 'public', label: 'Booking pages', sub: 'one subdomain per business', x: 30, y: 84, w: 180, h: 54, kind: 'client' },
+  { id: 'web', label: 'Admin + Control Panel', sub: 'React 19 · Vite', x: 30, y: 156, w: 180, h: 54, kind: 'client' },
+  { id: 'mobile', label: 'iOS + Android app', sub: 'Capacitor · Tap to Pay', x: 30, y: 258, w: 180, h: 54, kind: 'client' },
+  // Edge
+  { id: 'cf', label: 'Cloudflare Worker', sub: 'serves SPA · tenant SEO', x: 262, y: 120, w: 170, h: 54, kind: 'external' },
+  // Render
+  { id: 'render', label: '', x: 480, y: 40, w: 250, h: 300, kind: 'ghost' },
+  { id: 'api', label: 'Flask API', sub: '633 endpoints · 52 blueprints', x: 495, y: 78, w: 220, h: 84 },
+  { id: 'worker', label: 'Worker', sub: 'reminder loop · task batch', x: 495, y: 192, w: 220, h: 54 },
+  { id: 'cron', label: 'Cron', sub: 'daily and weekly sweeps', x: 495, y: 268, w: 220, h: 54 },
+  // Data and third parties
+  { id: 'pg', label: 'PostgreSQL 16', sub: '127 models · advisory locks', x: 790, y: 24, w: 220, h: 54, kind: 'store' },
+  { id: 's3', label: 'S3 + CloudFront', sub: 'uploads', x: 790, y: 100, w: 220, h: 54, kind: 'store' },
+  { id: 'stripe', label: 'Stripe', sub: 'Billing · Connect · Terminal', x: 790, y: 176, w: 220, h: 54, kind: 'external' },
+  { id: 'msg', label: 'Messaging', sub: 'email · SMS · WhatsApp · push', x: 790, y: 252, w: 220, h: 54, kind: 'external' },
+  { id: 'sentry', label: 'Sentry', sub: 'errors, API and SPA', x: 790, y: 328, w: 220, h: 54, kind: 'obs' },
 ];
 const edges: DEdge[] = [
-  { from: 'clients', to: 'api', tone: 'teal', label: 'REST · JWT', lo: [0, -14], fp: 0.3 },
-  { from: 'api', to: 'pg', tone: 'violet', fp: 0.15 },
-  { from: 'api', to: 'redis', tone: 'violet', fp: 0.38 },
-  { from: 'api', to: 's3', tone: 'violet', fp: 0.62 },
-  { from: 'api', to: 'stripe', tone: 'amber', fp: 0.86, both: true, label: 'webhooks', lo: [14, 16] },
-  { from: 'worker', to: 'msg', tone: 'amber' },
+  { from: 'public', to: 'cf', tone: 'teal', tp: 0.3 },
+  { from: 'web', to: 'cf', tone: 'teal', tp: 0.7 },
+  { from: 'cf', to: 'api', tone: 'teal', label: 'REST · JWT', lo: [-34, -18], tp: 0.3 },
+  { from: 'mobile', to: 'api', tone: 'teal', tp: 0.8, label: 'bundled SPA, direct to API', lo: [10, 30] },
+  { from: 'render', to: 'pg', tone: 'violet', fp: 0.06, label: 'all three', lo: [-4, -12] },
+  { from: 'api', to: 's3', tone: 'violet', fp: 0.35 },
+  { from: 'api', to: 'stripe', tone: 'amber', fp: 0.62, both: true, label: 'webhooks', lo: [30, 14] },
+  { from: 'api', to: 'msg', tone: 'amber', fp: 0.9, tp: 0.3 },
+  { from: 'worker', to: 'msg', tone: 'amber', tp: 0.7 },
+  { from: 'render', to: 'sentry', tone: 'muted', fp: 0.97, dashed: true },
 ];
 ---
 
 <ArchDiagram
-  title="JustBook architecture: a React admin app, Capacitor mobile apps and public booking pages call one Flask API, which runs on Render beside a worker and cron service and uses PostgreSQL, Redis, S3, Stripe and messaging providers."
-  width={950}
-  height={390}
+  title="JustBook architecture: booking pages and the admin web app are served by a Cloudflare Worker and call one Flask API; the mobile app bundles the same React app and calls the API directly. The API, a background worker and cron jobs run on Render and share one PostgreSQL database. The API also talks to S3 behind CloudFront, Stripe, and the messaging providers; the worker sends scheduled messages; errors go to Sentry."
+  width={1030}
+  height={410}
   nodes={nodes}
   edges={edges}
   groups={[
-    { label: 'Clients', x: 20, y: 50, w: 200, h: 270 },
-    { label: 'Render', x: 310, y: 40, w: 260, h: 322 },
+    { label: 'Clients', x: 14, y: 44, w: 212, h: 284 },
+    { label: 'Render', x: 480, y: 40, w: 250, h: 300 },
   ]}
   legend={[
     { tone: 'teal', label: 'client traffic' },

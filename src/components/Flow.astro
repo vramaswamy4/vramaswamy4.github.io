@@ -1,5 +1,6 @@
 ---
-interface Step { kind: 'sync' | 'async' | 'user'; who: string; text: string }
+// `tag` overrides the default label for a step's kind (the defaults were written for ride-dispatch).
+interface Step { kind: 'sync' | 'async' | 'user'; who: string; text: string; tag?: string }
 interface Props { steps: Step[] }
 const { steps } = Astro.props;
 const tag = { sync: 'gRPC / HTTP', async: 'RabbitMQ', user: 'user' };
@@ -10,7 +11,7 @@ const tag = { sync: 'gRPC / HTTP', async: 'RabbitMQ', user: 'user' };
     <li class={s.kind} data-reveal style={`--d:${Math.min(i, 6) * 40}ms`}>
       <span class="n">{String(i + 1).padStart(2, '0')}</span>
       <div>
-        <div class="head"><b>{s.who}</b><span class="tag">{tag[s.kind]}</span></div>
+        <div class="head"><b>{s.who}</b><span class="tag">{s.tag ?? tag[s.kind]}</span></div>
         <p set:html={s.text} />
       </div>
     </li>

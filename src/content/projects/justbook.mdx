@@ -1,14 +1,15 @@
 ---
 title: JustBook
 tagline: A booking and payments platform for appointment businesses. Live on web, iOS and Android.
-summary: Founder and sole engineer. Idea to production in 15 months, covering product, architecture, code, payments and operations. About 340K lines, 632 endpoints, 5,400+ tests.
+summary: Founder and sole engineer. Idea to production in 15 months, covering product, architecture, code, payments and operations. About 230K lines of application code, 633 endpoints, 8,500+ automated tests.
 order: 1
 role: Founder and sole engineer
 period: May 2025 – present
 status: Live since August 2026
-stack: [Python, Flask, SQLAlchemy, PostgreSQL, Redis, React 19, TypeScript, Stripe, Capacitor, Cloudflare Workers, Playwright]
+stack: [Python, Flask, SQLAlchemy, PostgreSQL, React 19, Vite, Capacitor, Stripe, Twilio, Cloudflare Workers, Render, pytest, Playwright]
 links:
   - { label: justbookapp.com, href: 'https://justbookapp.com' }
+  - { label: Availability engine source, href: 'https://github.com/vramaswamy4/justbook-availability-engine' }
   - { label: App Store, href: 'https://apps.apple.com/us/app/justbook-biz/id6803725866' }
   - { label: Google Play, href: 'https://play.google.com/store/apps/details?id=com.justbookapp.business' }
   - { label: Public docs, href: 'https://docs.justbookapp.com' }
@@ -18,25 +19,26 @@ accent: amber
 import JustBookArch from '../../components/diagrams/JustBookArch.astro';
 import Stats from '../../components/Stats.astro';
 import Shot from '../../components/Shot.astro';
+import Flow from '../../components/Flow.astro';
 import calendar from '../../assets/projects/justbook-calendar.png';
 import examples from '../../assets/projects/justbook-examples.png';
 
 ## What it is
 
-JustBook is a booking and payments platform for salons, barbershops, clinics and other appointment businesses. Each business gets its own branded booking page, an admin app that runs the day (calendar, team, clients, inventory, marketing), and in-person payments on a card reader or straight on a phone.
+JustBook is a booking and payments platform for salons, barbershops, clinics and other appointment businesses. Each business gets a branded booking page on its own subdomain, an admin app that runs the day (calendar, team, clients, inventory, marketing, payroll), and in-person payments on a card reader or on the phone itself. A separate control panel runs plans, billing and tenants.
 
-I took it from idea to production alone: product, architecture, code, payments and operations. It has been live on web, iOS and Android since August 2026.
+I took it from idea to production alone: product, architecture, code, payments and operations. It launched in August 2026 on web, iOS and Android and is open for signup. It does not have paying customers yet, so nothing on this page is a usage number. Every number below is a count of the codebase, taken in September 2026.
 
 <Stats items={[
-  { value: '~340K', label: 'lines of application code' },
-  { value: '632', label: 'REST endpoints in 52 blueprints' },
-  { value: '127', label: 'PostgreSQL tables, 129 migrations' },
-  { value: '5,400+', label: 'tests: pytest, Vitest, Playwright' },
-  { value: '19', label: 'custom CI guards that fail the build' },
-  { value: '76', label: 'dated architecture decisions' },
+  { value: '~230K', label: 'lines of application code, plus ~118K lines of tests' },
+  { value: '633', label: 'REST endpoints in 52 Flask blueprints' },
+  { value: '127', label: 'SQLAlchemy models, 130 Alembic migrations' },
+  { value: '8,500+', label: 'tests: 4,243 pytest, 3,338 Vitest, 958 Playwright' },
+  { value: '22', label: 'custom guards: 13 lint scripts and 9 guard tests in the suite' },
+  { value: '76', label: 'dated architecture decisions, each with its reasoning' },
 ]} />
 
-<Shot src={calendar} alt="The JustBook admin calendar showing a day of appointments across three stylists" url="app · calendar" caption="The admin calendar. Every slot on it comes from the same availability engine the public booking page uses." />
+<Shot src={calendar} alt="The JustBook admin calendar showing a day of appointments across three stylists" url="app · calendar" caption="The admin calendar. The times it offers for a new appointment come from the same availability engine the public booking page uses." />
 
 ## Architecture
 
@@ -44,44 +46,156 @@ A deliberate monolith: one Flask API, one PostgreSQL database, one React app. Wi
 
 <JustBookArch />
 
-- **Backend.** Python, Flask and SQLAlchemy on Render as three services: API, background worker and cron. PostgreSQL 16 with Alembic migrations run without downtime. Redis alongside it. Off-platform backups every day, with restore drills.
-- **Frontend.** React 19 and Vite. Every screen was designed in Figma before it was built.
-- **Mobile.** The same app on iOS and Android through Capacitor, with native Tap to Pay, push notifications (APNs and FCM), passkeys and barcode scanning.
-- **Edge and storage.** Cloudflare Workers at the edge. Uploads live in AWS S3 and are served through CloudFront, with a separate bucket and distribution for staging. Sentry for errors, and a staging environment that mirrors production.
-- **Messaging.** Transactional email, Twilio SMS, and WhatsApp with 34 Meta-approved templates. AWS SES bounce and complaint events come back to the API through an SNS topic subscribed to a webhook.
+- **Backend.** A Flask application factory with 52 blueprints under `/api`. Every database, from a laptop to production, is built the same way: `alembic upgrade head` from one replayable baseline. A test fails if the models and the migrations disagree or if the migration graph has two heads.
+- **Frontend.** One React 19 and Vite app serves three surfaces: the public booking flow, the admin portal (about 100 pages, designed for a phone first) and the control panel. Client state is React Context. Pages fetch their own data, so what is shared is small: session, branch, tenant branding, plan features, toasts. The CSS is my own design system. Every colour comes from a per-tenant palette through tokens, and a lint script fails on a hard-coded colour.
+- **Mobile.** The same bundle inside a Capacitor shell on iOS and Android, with native code only where it is required: push (APNs directly, FCM for Android), passkeys, a barcode scanner, and Stripe Terminal for card readers and Tap to Pay.
+- **Edge.** Three Cloudflare Workers: the app, the marketing site and the public docs. The app's Worker sits on a wildcard subdomain route, runs before static assets, and writes per-business SEO tags into the HTML. The API hostname is not proxied.
+- **Jobs.** No queue. One always-on worker boots the app once, sends due reminders every 60 seconds, and runs a batch of cut-off-query tasks every 5 minutes (deposit nudges and expiries, scheduled broadcasts, waitlist backfill). A daily cron runs about 20 sweeps and a weekly one reconciles storage. Every task selects "everything due as of now", so a restart delays work and never drops it, and one sequential loop cannot send twice.
+- **Storage.** Uploads go to a private S3 bucket served through CloudFront. Staging has its own bucket and distribution.
+- **Messaging.** One policy module decides whether a message may be sent and on which channels: plan and credentials, then the business's channel settings, then the template, then the recipient's preference. One executor does the fan-out for every customer-facing send. Transactional email goes through ZeptoMail, marketing email through Postmark on a separate sending subdomain, or through a business's own SMTP. SMS and WhatsApp go through Twilio, with 34 Meta-approved WhatsApp templates. Bounce and complaint events come back through provider webhooks.
+- **Environments.** `main` deploys a full staging mirror with its own database, Stripe sandbox, bucket and domain. Production follows a separate branch that only moves by an explicit promotion. Migrations run as a pre-deploy step, so a failed migration blocks the release. Dropping a column is always two deploys, because old code and new schema are briefly live together.
+- **Operations.** Sentry on the API and the app, with releases keyed by commit. A nightly `pg_dump` runs from GitHub Actions to a versioned S3 bucket with a key that can write but not delete. It runs off the hosting platform on purpose. The restore path is written down and has been run end to end.
+
+### Why each choice
+
+- **Flask**, over Django or FastAPI. I started with it and kept it. Django brings more than this API needs, and Flask leaves the structure to me.
+- **PostgreSQL**, over MySQL or a document store. Partial unique indexes back the payment guards. Transaction-scoped advisory locks serialize bookings. Every JSON column is `jsonb`.
+- **One worker loop**, over Celery or RQ. Minute-accurate reminders with no broker to run, and no overlap, so no double send.
+- **React Context**, over Redux. Pages own their data. The shared state is a few cross-cutting values.
+- **My own design system**, over Bootstrap or a component library. Tenant theming needs every colour to come from a token. Bootstrap was in the project early and I removed it.
+- **Capacitor**, over React Native or two native apps. One codebase for web and both app stores. Native only for push, passkeys, scanning and Terminal.
+- **Stripe Connect with Standard accounts**, over Express or Custom. The business owns its Stripe account and its dashboard. Charges are direct, and JustBook takes no commission on them.
+- **Render**, over AWS from day one. Web service, worker, cron jobs, managed Postgres and pre-deploy commands in one place. It removed a layer of infrastructure work while load didn't justify more. I expect to move when scale requires it.
+- **Cloudflare Workers**, over Vercel, where it started. The app needs code at the edge on a wildcard subdomain.
+- **CloudFront in front of S3**, over Cloudflare R2. No code change, because the base URL was already configurable, and no new vendor.
 
 ## The availability engine
 
-"When can this client book?" sounds like one query. It is the hardest problem in the product, because the answer depends on the stylist's schedule, existing appointments, temporary holds from people mid-checkout, time off, buffers between services, and the length of the service being booked, and because two people can ask at the same moment and both be told yes.
+This is the part of JustBook I have published. The [source, its tests and a runnable example are on GitHub](https://github.com/vramaswamy4/justbook-availability-engine). The engine file there is byte-for-byte the file in the product.
 
-**One engine, three callers.** Slots are generated on a fixed grid over per-stylist conflict indexes built from appointments, holds, time-off and buffers. The public booking page, the admin calendar and the waitlist all call the same code, so they can never disagree about whether a slot is free.
+### The problem
 
-**Double bookings are impossible, not unlikely.** Every path that creates a booking re-validates the slot under a per-slot PostgreSQL advisory lock. A stale cache can show a slot that has just gone; the worst outcome is a `409` and a fresh list, never two people in one chair.
+A customer picks a service and sees a month. Days with a free time are clickable. They pick a day and see start times. It sounds like subtracting appointments from opening hours. What makes it harder:
 
-**Fast on the hot path.** The booking flow went from about 0.8 s to a single query on warm hits, using request-scoped memoization and a per-worker TTL cache that is invalidated by events rather than by time alone. A query-budget test in CI fails the build if the count creeps back up.
+- **Time zones.** Branches of one business can be in different zones. Appointment times are stored as wall-clock time at the branch. "Now", lead times and hold expiry are absolute instants.
+- **Daylight saving.** A branch open 09:00 to 17:00 is open 09:00 to 17:00 on the 23-hour and 25-hour days too.
+- **Three layers of schedule.** A slot must fit the branch's opening hours (weekly, with per-date overrides and closures) and the stylist's roster at that branch, and miss their time off, which can span days.
+- **Buffers.** A gap is kept around every appointment. It widens conflicts. It is never stored and never shown.
+- **A grid.** Start times are offered every 5 to 60 minutes on the clock the customer reads. A free run of the right length is not the same thing as a free run that contains a grid point.
+- **Holds.** While a customer types their details the slot is held for five minutes. A hold hides the slot from others. It does not reserve it.
+- **"Any stylist".** Free if at least one qualified stylist is free, and the answer lists which.
+- **The customer's own diary.** One person cannot be in two chairs.
+- **Month and day must agree.** A clickable day with no times in it is the most visible bug this feature can have.
+- **Concurrency.** Two people can ask at the same moment and both be told yes.
 
-I'm extracting the engine into a public, tested library with a full write-up. It will be linked here.
+### The data model
+
+Seven tables: branch hours and time zone, per-date special hours, the weekly stylist roster, stylist time off, appointments, per-tenant appointment statuses, and holds. Statuses are rows, not an enum. Only the status named Cancelled releases a slot. Every other status, and a missing status, blocks it.
+
+The routes resolve everything that needs a request: tenant, branch access, which stylists are qualified for the service, durations including add-ons, the settings values. The engine receives plain values and never sees a request. That is what lets the public page, the admin calendar and the waitlist call the same two functions, and what made it possible to publish the file unchanged.
+
+### The algorithm
+
+<Flow steps={[
+  { kind: 'sync', tag: '5 queries', who: 'Load the month', text: 'Non-cancelled appointments, live holds, time off, the weekly roster and the month\'s special hours, each in one query bounded by the month. A sixth loads the customer\'s own appointments when the customer is known.' },
+  { kind: 'user', tag: 'in memory', who: 'Normalise', text: 'Every stored wall-clock time is localised in the branch\'s zone and converted to an absolute UTC instant. All arithmetic from here on is on instants, which is why DST days come out right.' },
+  { kind: 'user', tag: 'in memory', who: 'Bucket conflicts', text: 'Appointment and hold ends are extended by the buffer. Each conflict is filed under every local date it touches, as a half-open interval, so three days of time off block three days and not the fourth.' },
+  { kind: 'user', tag: 'in memory', who: 'Intersect hours', text: 'For each day and each stylist: special hours beat the weekly schedule, a closure beats both, and the stylist\'s shift is intersected with the branch\'s opening hours.' },
+  { kind: 'user', tag: 'in memory', who: 'Walk the grid', text: 'Start at the later of opening time and now plus lead time. Round up to the next increment on the branch\'s local clock. Step while start + duration + buffer still fits. The first start that misses every conflict makes the day available.' },
+  { kind: 'async', tag: 'output', who: 'Report', text: 'Each day is available, full (open and rostered, no gap left) or closed. The day view runs the same walk and returns every free start instead of stopping at the first.' },
+]} />
+
+The month check simulates the day generator instead of approximating it. That was a fix, not the first design. An earlier "is there a free run at least this long" check offered days whose slot list turned out to be empty.
+
+**Cost.** Queries are constant: five for a month, six with a customer, five for a day. They do not grow with stylists, appointments or days, and two tests fail if they start to. In memory the month is O(days × stylists × grid points × that stylist's conflicts that day) at worst, with an early exit at the first free start. Conflicts are scanned linearly. With a handful per stylist per day, that is cheaper than an interval tree.
+
+### How double booking is prevented
+
+Availability is a read, and a read can be stale by the time someone clicks. So it is never trusted at write time. A second function re-runs the same rules against the database when a booking is about to land: same cancelled-only filter, same buffer on both sides, same meaning of "any stylist". It also re-checks opening hours and the roster, because a request posted straight to the API never went through slot generation.
+
+A check followed by an insert is a race. Two transactions both see an empty slot and both insert. A k6 script bursting one slot with dozens of clients reproduced exactly that before any lock existed. The fix is in the database: every write that places an appointment on a slot takes a transaction-scoped PostgreSQL advisory lock before its conflict check. The loser waits for the winner to commit, runs its check, sees the winner's row, and gets a clean `409`. Commit or rollback releases the lock, so nothing can leak it.
+
+- **The key is the branch and the local date**, one lock for each date the buffered window touches. Two bookings can only conflict if their windows share an instant, and a shared instant is a shared date, so every pair that could collide shares a lock. A test sweeps windows across two midnights and checks that property against the conflict rule itself.
+- The key used to be the exact start time. That passes a same-slot load test and still lets 10:00 to 11:00 and 10:30 to 11:30 through on different keys. It was found by reading the code in order to explain it, and fixed the same day.
+- A window that spans midnight takes two locks. The lock ids are sorted before they are taken, so every transaction locks in the same order and two of them cannot deadlock.
+- It is not keyed on the stylist, so the "pick the first free stylist" path is serialized too.
+
+**Why not an exclusion constraint?** It is the textbook answer and it does not fit. Staff may deliberately double-book a walk-in, as an audited override, so overlap is a legal state. "Cancelled" is a row in a per-tenant table, which a partial-index predicate cannot see. The buffer is a setting that can change, so it cannot live in stored ranges.
+
+### How it is kept fast
+
+- **Constant queries**, as above. The special-hours lookup was one query per day until it was bulk-loaded.
+- **A per-worker cache** for the public month and day responses, 15 to 30 seconds, keyed on the full input. It is invalidated by SQLAlchemy session listeners that bump a per-tenant version whenever any availability input commits, so it does not rely on the timer alone. Requests that carry a customer or edit an existing appointment bypass it.
+- **No shared cache, on purpose.** A booking on one worker can leave another worker offering a stale slot for a few seconds. The write path makes that a `409`, never a double booking.
+- On my machine, against about 7,000 synthetic appointments, the month calendar went from 53 ms and 10 queries cold to 2.5 ms and 4 queries warm. For the booking-flow payload the same cache turns nine sequential database round trips into one, which in production was a cold response of roughly 0.8 seconds.
+
+### How it is tested
+
+The public repository has 63 tests and each edge case names the test that proves it: both DST transitions, a half-hour-offset zone, month boundaries, multi-day time off and the midnight edge, buffered tails with no grid point, cancelled versus no-show versus missing status, live, expired and released holds, any-stylist, the customer's own diary, the query budget, and the lock held against a second PostgreSQL connection.
 
 ## Payments
 
-Stripe Subscriptions for the platform's own billing, Connect direct charges so each business is paid into its own account, and Terminal for in-person payments on S700 and M2 readers and Tap to Pay on iPhone and Android.
+Three Stripe products, two money paths.
 
-Webhooks are handled exactly once across all three. Every mutation that moves money carries an idempotency key, and settlement state is derived rather than stored, so a retried or out-of-order webhook cannot double-charge or mark an unpaid booking as paid.
+- **Each business is paid directly.** A business connects its own Stripe account (Connect, Standard accounts, onboarded with Account Links). Deposits, balances and refunds are direct charges on that account. JustBook takes no commission on them.
+- **The platform bills separately.** Subscriptions for JustBook's own plans run through Stripe Billing, with their own webhook endpoint and signing secret. Keeping the two paths apart is what keeps signature checks and replays simple.
+- **In person.** Stripe Terminal drives S700 and M2 readers and Tap to Pay on iPhone and Android.
 
-## Tenant isolation as a build invariant
+Stripe redelivers webhooks, and one checkout can be processed by three handlers: `checkout.session.completed`, `payment_intent.succeeded` and the browser's own verify call. So money mutations are exactly-once by construction, not by care at the call site. The guard lives inside each helper (redeem points, use a package session, earn points, record a gift-card purchase) and is keyed on what is stable for that flow: the appointment id for a booking, the Stripe payment-intent id for a purchase with no appointment. Several of those guards are also partial unique indexes, so the database refuses a duplicate even if the code were wrong. The handlers answer the way Stripe expects: a bad signature is a 400, an event I don't handle is a 200, a transient failure is a 500 so Stripe retries a handler that is safe to retry.
 
-Every business's data is scoped on the server, on every route, through one generic access-control guard. A business can also have branches, and scoping covers both.
+Two more rules. Loyalty points and package sessions are only spent when an appointment becomes Booked, so an abandoned checkout leaves the customer's balance untouched. Screens that show an amount for an existing booking read the stored amount and never recompute it from policy. Recomputing once dropped an applied discount and showed the wrong number. Tax is computed by JustBook, branch override first and then the business default, and sent to Stripe as tax-inclusive.
 
-I didn't want isolation to depend on remembering. Nineteen custom CI guards fail the build on things like a route without a guard, a response that breaks the error contract, documentation that has drifted from the code it describes, or a secret in a log line. On top of that: role-based access control, JWT sessions, TOTP and WebAuthn passkeys, rate limiting, an audit log, and a register for GDPR privacy requests.
+## Isolation and security
 
-One modelling decision I'd defend: in the booth-rental model, each renter gets their own tenant linked to the venue rather than nested under it. A renter is an independent business with their own clients and money. Making them a sub-object of the salon would have leaked that boundary into every query.
+One database, a tenant id on every tenant-owned row. The tenant comes from the subdomain on every request. Inside a business, staff are scoped to the branches they are assigned to by one helper that every list, finance and appointment route calls.
+
+I didn't want isolation to depend on remembering, so it is checked by machines:
+
+- A test parses every route with Python's `ast` module and fails if an endpoint has no auth decorator, no in-body auth check, and no entry in a reviewed list of deliberately public paths.
+- An audit of every route for lookups by id alone found and fixed a cross-tenant delete. Queries that load a tenant-owned row filter by tenant.
+- Every error response has one shape: a human sentence, an optional machine code from a registry of 181, and optional field errors. A script generates the frontend's constants from the registry. Tests fail if that file is stale or if a route puts a code where the sentence belongs. Global handlers keep exception text out of every response.
+- Other guards fail on a secret in a log line, a hard-coded colour, a reintroduced Bootstrap class, a second spinner implementation, a second way to read an API error, or a document whose owning code moved.
+
+Sessions are JWTs with sliding renewal and server-side revocation. Tenant admins can add a second factor: a one-time code, TOTP, a passkey or recovery codes. Customers sign in with a one-time code and carry a separate token. Control-panel logins always need an emailed code. Access is 16 coarse permissions granted to roles, three of which gate deviating from policy (refunds, pricing, scheduling) and can also be granted to one person. There is rate limiting on logins and codes, an audit log, and a register for privacy requests.
+
+One modelling decision I'd defend: in the booth-rental model, each renter gets their own tenant linked to the venue instead of being nested under it. A renter is an independent business with their own clients and money. Making them a sub-object of the salon would have leaked that boundary into every query.
 
 <Shot src={examples} alt="The JustBook examples page showing demo businesses, each with different branding, running on the live product" url="justbookapp.com/examples" caption="Twelve demo businesses on the live product, each wearing its own branding." />
 
+## Key decisions
+
+Each one: what I chose, why, over what, and what would change it.
+
+- **A monolith.** One engineer. Every boundary I skipped is a failure mode I never debugged. Over services. A team, or a part with a different scaling profile, would change it.
+- **One availability engine, and routes pass values in.** Two 200-line copies of the month logic had drifted, and the waitlist needed slots without an HTTP request. Over one implementation per surface. I can't foresee what would change it.
+- **Wall-clock storage for appointment times, UTC for absolute stamps.** A schedule is wall-clock: 09:00 stays 09:00 across DST and rule changes. The cost is that every comparison with "now" goes through one helper, and forgetting that caused real bugs. Over `timestamptz` plus a zone column. Only a rewrite of the time layer would change it.
+- **An advisory lock and a re-check.** Overlap is a legal, audited state, and status and buffer can't be expressed in a constraint. Over an exclusion constraint. Removing staff overrides would change it.
+- **Holds don't reserve.** An abandoned hold must not strand a slot. The claim happens once, at confirm, under the lock. Over reserving at hold time. Hold abuse in practice would change it.
+- **Every JSON column is `jsonb`.** PostgreSQL has no equality operator for `json`. One such column in a `SELECT DISTINCT` took a production page down. Over the ORM's default JSON type.
+- **Idempotency inside the money helpers.** "Every caller remembers to check first" is how a double redeem happened. Over guards at call sites, or a webhook event-id table.
+- **`main` is staging, and production moves by pushing one ref to another.** Several agent sessions share one working tree, so nobody may switch branches. Promotion by ref push needs no checkout. Over a staging branch merged into main. One developer in one session would change it.
+- **A database per test run, built from migrations.** Runs that shared a database deadlocked. Building from migrations removes a class of schema drift. Over one shared test database.
+- **Guards run in the test suite, lint and a pre-push hook.** Every push comes from one machine, so the gates had to live where the agents run. Over hosted CI. A second contributor would change it, and then hosted CI comes first.
+- **Documentation with owners.** Each doc lists the code it covers, and a script reports code that changed without it. Over a README per package.
+
 ## How it was built
 
-Most of the code was written with AI coding agents running concurrently on one shared tree. What made that work was not the agents. It was the rules around them: a 640-line engineering-standards document, 76 dated architecture decisions, and machine-checked invariants that fail the build when the rules are broken. I own every architecture decision in that record, and I can explain each one.
+Most of the code was written with AI coding agents, often several at once on one shared checkout. What made that work was not the agents. It was the rules around them: a 650-line engineering-standards document, 76 dated architecture decisions, a claim log the agents write to before touching files, and machine-checked invariants that fail when a rule is broken. I set the architecture, the invariants and the product decisions, and I review and operate the result. Every screen was designed in Figma before it was built.
 
-## Why the code is private
+## What I learned
 
-JustBook is a live commercial product with customer data flows, Stripe and Twilio integrations, and legal documents, so the repositories stay private. What you can see: [the product](https://justbookapp.com), the apps on the [App Store](https://apps.apple.com/us/app/justbook-biz/id6803725866) and [Google Play](https://play.google.com/store/apps/details?id=com.justbookapp.business), [the public docs](https://docs.justbookapp.com), the [live example businesses](https://justbookapp.com/examples), and soon the availability engine as its own open repository.
+- The booking lock was keyed on the exact start time from the day it was added, and a same-slot load test passed the whole time. Overlapping bookings with different start times were never in the test matrix.
+- The slot grid was aligned on UTC minutes. That is correct in every whole-hour time zone and wrong in India or Adelaide at 20- and 60-minute increments. Every branch I had tested was in a whole-hour zone.
+- The month view shipped twice with clickable days that had no times: once because a free run is not a grid start, once because multi-day time off was filed under its first day only.
+- Comparing wall-clock appointment times with UTC "now" made bookings look past hours early for US branches. It was invisible for Gulf branches, which are ahead of UTC and failed lenient instead.
+- There is no hosted CI. The backend suite takes about nineteen minutes and pushes happen before it finishes. A commit that did not parse reached staging once, which is why a pre-push hook now byte-compiles the commit being pushed.
+- Reversals: Bootstrap to my own design system, Vercel to Cloudflare Workers, two repositories to one so that a change, its tests and its docs are one commit, and marketing email to Postmark after AWS declined SES production access.
+
+## What is public
+
+JustBook is a commercial product with customer data flows, payment integrations and legal documents, so its repositories are private. What you can see:
+
+- **[The availability engine](https://github.com/vramaswamy4/justbook-availability-engine)**: production code, 63 tests, a runnable example, and a longer technical write-up of the whole system.
+- [The product](https://justbookapp.com) and the [live example businesses](https://justbookapp.com/examples).
+- The apps on the [App Store](https://apps.apple.com/us/app/justbook-biz/id6803725866) and [Google Play](https://play.google.com/store/apps/details?id=com.justbookapp.business).
+- [The public docs](https://docs.justbookapp.com), including reference tables generated from the application's own registries.
