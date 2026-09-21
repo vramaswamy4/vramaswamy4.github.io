@@ -1,0 +1,226 @@
+{
+  "person": {
+    "name": "Vinith Ramaswamy",
+    "title": "Software Engineer",
+    "location": "San Jose, CA",
+    "email": "vinithramaswamy@gmail.com",
+    "phone": "(608) 949-4944",
+    "work_auth": "U.S. permanent resident (no sponsorship needed)",
+    "links": [
+      "vramaswamy4.github.io",
+      "linkedin.com/in/vinithramaswamy",
+      "github.com/vramaswamy4",
+      "justbookapp.com"
+    ]
+  },
+  "education": [
+    {
+      "degree": "B.S. Computer Science & B.S. Data Science",
+      "gpa": "GPA 3.96 / 4.0",
+      "dates": "Aug 2023 – May 2026",
+      "school": "University of Wisconsin–Madison",
+      "notes": "Graduated with Distinction, in three years · Certificate in Entrepreneurship",
+      "coursework": "Big Data Systems, Honors Algorithms, Databases, AI, Machine Learning, Machine Organization"
+    }
+  ],
+  "experience": [
+    {
+      "id": "justbook",
+      "title": "Founder & Software Engineer",
+      "subtitle": "",
+      "org": "JustBook",
+      "note": "Booking and payments SaaS",
+      "when": "May 2025 – Present",
+      "href": "/projects/justbook/",
+      "stack": "Python, Flask, SQLAlchemy, PostgreSQL, React 19, Vite, Capacitor, Stripe, Twilio, Cloudflare Workers, Render, AWS S3/CloudFront, pytest, Vitest, Playwright",
+      "bullets": [
+        {
+          "lead": "Built and shipped a multi-tenant booking and payments platform alone in 15 months,",
+          "rest": "live on web, iOS and Android: Flask/PostgreSQL API (633 endpoints, 127 models), React 19 front end, and Capacitor mobile apps with Stripe Tap to Pay."
+        },
+        {
+          "lead": "Designed the availability engine",
+          "rest": "(time zones, DST, rosters, holds) shared by the booking site, admin calendar and waitlist so they cannot disagree; a constant 5 queries per month view, pinned by query-budget tests; published on GitHub."
+        },
+        {
+          "lead": "Eliminated double bookings under concurrency:",
+          "rest": "reproduced the race with a k6 load test, then serialized all five booking write paths with PostgreSQL advisory locks keyed per branch and day, ordered to prevent deadlock."
+        },
+        {
+          "lead": "Integrated Stripe Connect, Billing and Terminal",
+          "rest": "(card readers, Tap to Pay on iPhone and Android) with replay-safe webhooks: exactly-once guards inside each money helper, backed by partial unique indexes."
+        },
+        {
+          "lead": "Cut the booking-flow read from nine sequential queries to one",
+          "rest": "on warm hits (about 0.8 s cold before) with request-scoped memoization and a commit-invalidated TTL cache; query-budget tests fail the build on regressions."
+        },
+        {
+          "lead": "Enforced tenant isolation mechanically:",
+          "rest": "an AST-based audit fails the test suite on any unguarded route, and a 181-code error contract generates the frontend constants; JWT with revocation, TOTP, passkeys and RBAC."
+        },
+        {
+          "lead": "Wrote 22 custom build guards",
+          "rest": "that fail the build on secrets in logs, schema/migration drift, error-contract violations and stale documentation, so standards are enforced by tooling rather than review."
+        },
+        {
+          "lead": "Built the test infrastructure for 8,500+ automated tests:",
+          "rest": "pytest against real PostgreSQL with an isolated database per run, Vitest, and Playwright at desktop, phone and iOS-WebKit sizes with axe accessibility checks."
+        },
+        {
+          "lead": "Operate production alone:",
+          "rest": "blocking pre-deploy migrations with expand/contract, a full staging mirror, nightly off-platform backups with a verified restore, Sentry keyed by commit, and a broker-free reminder worker."
+        },
+        {
+          "lead": "Unified notifications across email, SMS, WhatsApp and push",
+          "rest": "(ZeptoMail, Postmark, Twilio with 34 Meta-approved templates, APNs, FCM) behind one policy module and one executor that replaced eleven hand-rolled send loops."
+        },
+        {
+          "lead": "Shipped the iOS and Android apps",
+          "rest": "from the same React codebase through Capacitor, with native Tap to Pay (Apple entitlement approved), push notifications, passkeys and barcode scanning."
+        },
+        {
+          "lead": "Ran several AI coding agents concurrently on one codebase and made it safe",
+          "rest": "with a 650-line engineering-standards document, 76 dated architecture decisions, a claim log, a pre-push hook and machine-checked invariants."
+        }
+      ]
+    },
+    {
+      "id": "neurosolis",
+      "title": "Web Developer & Product Consultant",
+      "subtitle": "",
+      "org": "NeuroSolis Therapeutics",
+      "note": "Contract · Remote",
+      "when": "Mar 2026 – May 2026",
+      "href": "",
+      "stack": "",
+      "bullets": [
+        {
+          "lead": "Designed, built and deployed the investor-facing website",
+          "rest": "with the founding team, from content structure and visual direction through domain configuration, turning complex biotech concepts into clear copy."
+        },
+        {
+          "lead": "Set up the company's technical operations,",
+          "rest": "including business email and DNS records, and handled ongoing updates."
+        }
+      ]
+    },
+    {
+      "id": "helpdesk",
+      "title": "IT Help Desk Technician, Level 1 to Lead",
+      "subtitle": "",
+      "org": "UW–Madison Libraries",
+      "note": "Part-time · Madison, WI",
+      "when": "Jan 2024 – May 2026",
+      "href": "",
+      "stack": "",
+      "bullets": [
+        {
+          "lead": "Promoted through four levels to Lead within a year;",
+          "rest": "led daily operations across public computer labs and the help desk (Active Directory, Bomgar, InfoBlox, Redmine), 29 hours a week alongside a full-time dual degree."
+        },
+        {
+          "lead": "Trained and onboarded new student technicians",
+          "rest": "and was the first point of contact for support tickets, triaging and resolving or escalating them."
+        },
+        {
+          "lead": "Featured by UW–Madison Libraries",
+          "rest": "for contributions to End User Computing operations and systems troubleshooting."
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "ride-dispatch",
+      "title": "ride-dispatch",
+      "subtitle": "Ride-sharing backend in Go microservices",
+      "org": "",
+      "note": "",
+      "when": "2026",
+      "href": "/projects/ride-dispatch/",
+      "stack": "Go, gRPC, RabbitMQ, Kafka, Redis, MongoDB, Kubernetes, Prometheus, Grafana, OpenTelemetry, Next.js",
+      "bullets": [
+        {
+          "lead": "Built a ride-sharing backend as five Go microservices on Kubernetes,",
+          "rest": "using gRPC where the caller needs an answer, RabbitMQ topic exchanges for events and commands, and WebSockets for live rider and driver updates."
+        },
+        {
+          "lead": "Designed a real-time driver-location pipeline:",
+          "rest": "Kafka partitioned by driver ID into an idempotent consumer that maintains a Redis geo index, making nearest-driver matching one GEOSEARCH and the driver service stateless."
+        },
+        {
+          "lead": "Made message handling crash-safe",
+          "rest": "with durable queues, manual acks, backoff retries, dead-lettering and idempotent handlers, proven by a chaos test that kills a pod mid-ride and asserts redelivery and no double-processing."
+        },
+        {
+          "lead": "Instrumented every service",
+          "rest": "with Prometheus metrics and a provisioned Grafana dashboard, and propagated OpenTelemetry traces across gRPC and RabbitMQ hops so one trace follows a ride end to end."
+        },
+        {
+          "lead": "Built a live operations map",
+          "rest": "(MapLibre GL, deck.gl) with streaming driver positions, an H3 demand heatmap and trip replay by seeking the Kafka log by timestamp, fed by a fleet simulator on OSRM routes."
+        }
+      ]
+    },
+    {
+      "id": "engine",
+      "title": "JustBook availability engine",
+      "subtitle": "Production scheduling code, published to be read and run",
+      "org": "",
+      "note": "",
+      "when": "2026",
+      "href": "https://github.com/vramaswamy4/justbook-availability-engine",
+      "stack": "Python, SQLAlchemy, PostgreSQL, pytest",
+      "bullets": [
+        {
+          "lead": "Published the production scheduling engine on GitHub",
+          "rest": "with 63 tests and a runnable example, covering branch time zones, DST transitions, half-open intervals, fixed slot grids, buffers, holds and multi-stylist selection."
+        },
+        {
+          "lead": "Held the month view to five queries regardless of business size",
+          "rest": "by loading conflicts once into per-stylist indexes and simulating the day generator in memory."
+        }
+      ]
+    },
+    {
+      "id": "bigdata",
+      "title": "Big Data Systems (CS 544): eight graded systems projects",
+      "subtitle": "",
+      "org": "",
+      "note": "",
+      "when": "Fall 2025",
+      "href": "",
+      "stack": "Python, gRPC, Kafka, Cassandra, Spark, HDFS, BigQuery, Docker",
+      "bullets": [
+        {
+          "lead": "Built a replicated gRPC lookup service",
+          "rest": "with LRU-cached HTTP front-ends that survives a container failure, and a SQL to HDFS Parquet pipeline (WebHDFS, PyArrow) that keeps serving through DataNode loss."
+        },
+        {
+          "lead": "Streamed MySQL rows through Kafka",
+          "rest": "to partition-assigned consumers writing Parquet to HDFS with exactly-once semantics, and wrote a Cassandra gRPC weather server tuned for write availability."
+        },
+        {
+          "lead": "Analyzed data with Spark",
+          "rest": "RDD, DataFrame and SQL APIs and trained a Spark ML decision tree; built a GCS to Dataform to BigQuery geo pipeline and a multithreaded word-count benchmark across CSV, Parquet and Arrow."
+        }
+      ]
+    },
+    {
+      "id": "minirel",
+      "title": "Minirel DBMS (CS 564)",
+      "subtitle": "",
+      "org": "",
+      "note": "",
+      "when": "Spring 2026",
+      "href": "",
+      "stack": "C++",
+      "bullets": [
+        {
+          "lead": "Implemented database internals in C++ from scratch,",
+          "rest": "an LRU buffer manager and a heap file manager."
+        }
+      ]
+    }
+  ]
+}
