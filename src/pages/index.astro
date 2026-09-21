@@ -1,0 +1,252 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import DispatchHero from '../components/DispatchHero.astro';
+import MatchVisual from '../components/MatchVisual.astro';
+import SkillGrid from '../components/SkillGrid.astro';
+import StackChips from '../components/StackChips.astro';
+import justbookShot from '../assets/projects/justbook-home.png';
+import avatar from '../assets/me/avatar.jpg';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+const facts = [
+  { value: '3.96', label: 'GPA at UW–Madison. Graduated with distinction.' },
+  { value: '2 degrees', label: 'B.S. Computer Science and B.S. Data Science, completed in three years.' },
+  { value: 'Sole engineer', label: 'of JustBook, in production on web, iOS and Android since August 2026.' },
+  { value: 'San Jose, CA', label: 'U.S. permanent resident. No sponsorship needed.' },
+];
+
+const experience = [
+  { when: 'May 2025 – now', title: 'Founder and software engineer', org: 'JustBook' },
+  { when: 'Mar – May 2026', title: 'Web developer and product consultant', org: 'NeuroSolis Therapeutics (contract)' },
+  { when: 'Jan 2024 – May 2026', title: 'IT help desk technician, Level 1 to Lead', org: 'UW–Madison Libraries' },
+];
+---
+
+<Base>
+  <section class="hero">
+    <DispatchHero />
+    <div class="wrap hero-inner">
+      <div class="who" data-reveal>
+        <Image class="avatar" src={avatar} alt="Vinith Ramaswamy" width={72} height={72} densities={[1, 2, 3]} loading="eager" />
+        <span class="eyebrow">Software engineer · San Jose, CA</span>
+      </div>
+      <h1 data-reveal style="--d:80ms">Vinith Ramaswamy</h1>
+      <p class="focus" data-reveal style="--d:120ms">Full-stack software engineer: backend, web, mobile and infrastructure.</p>
+      <p class="lede" data-reveal style="--d:160ms">
+        B.S. Computer Science and B.S. Data Science from UW–Madison, GPA 3.96, in three years. Founder and sole engineer of{' '}
+        <a href="/projects/justbook/">JustBook</a>, a booking and payments platform in production on web, iOS and Android.
+        Currently building distributed systems in Go.
+      </p>
+      <div class="actions" data-reveal style="--d:240ms">
+        <a class="btn primary" href="#work">Projects <span class="arrow" aria-hidden="true">→</span></a>
+        <a class="btn" href="/about/">About</a>
+        <a class="btn" href="/Vinith_Ramaswamy_CV.pdf" target="_blank" rel="noopener">CV</a>
+        <a class="btn" href="https://www.linkedin.com/in/vinith-ramaswamy-6a5964200" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span></a>
+        <a class="btn" href="https://github.com/vramaswamy4" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="numbers">
+    <div class="wrap grid">
+      {facts.map((n, i) => (
+        <div data-reveal style={`--d:${i * 70}ms`}>
+          <strong>{n.value}</strong>
+          <span>{n.label}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="section" id="work">
+    <div class="wrap">
+      <div class="section-head" data-reveal>
+        <h2>Projects</h2>
+        <p>Each write-up covers the architecture, the stack and why each part was chosen, the main decisions, and what I learned.</p>
+      </div>
+
+      <div class="cards">
+        {projects.map((p) => (
+          <a class={`card accent-${p.data.accent}`} href={`/projects/${p.id}/`} data-reveal>
+            <div class="visual">
+              {p.id === 'justbook' ? (
+                <div class="shot">
+                  <Image src={justbookShot} alt="The JustBook marketing site showing a business's branded booking page on a phone" widths={[640, 1100, 1600]} sizes="(max-width: 900px) 100vw, 640px" />
+                </div>
+              ) : (
+                <MatchVisual />
+              )}
+            </div>
+            <div class="info">
+              <div class="top">
+                <span class="when">{p.data.status ?? p.data.period}</span>
+                <span class="role">{p.data.role}</span>
+              </div>
+              <h3 transition:name={`title-${p.id}`}>{p.data.title}</h3>
+              <p>{p.data.summary}</p>
+              <StackChips items={p.data.stack.slice(0, 8)} />
+              <span class="more">Read the write-up <span class="arrow" aria-hidden="true">→</span></span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="wrap">
+      <div class="section-head" data-reveal>
+        <h2>Skills</h2>
+      </div>
+      <SkillGrid />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head" data-reveal>
+        <h2>Education and experience</h2>
+      </div>
+      <div class="bg">
+        <div class="edu" data-reveal>
+          <div class="gpa"><strong>3.96</strong><span>/ 4.0 GPA</span></div>
+          <h3>B.S. Computer Science<br />B.S. Data Science</h3>
+          <p>University of Wisconsin–Madison · Aug 2023 – May 2026</p>
+          <p>Graduated with distinction, in three years. Certificate in Entrepreneurship.</p>
+        </div>
+        <ol class="exp">
+          {experience.map((e, i) => (
+            <li data-reveal style={`--d:${i * 60}ms`}>
+              <span class="when">{e.when}</span>
+              <div><h3>{e.title}</h3><p>{e.org}</p></div>
+            </li>
+          ))}
+          <li class="all" data-reveal><a href="/about/">Full background <span aria-hidden="true">→</span></a></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: min(100svh, 920px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 0 clamp(72px, 10vw, 120px);
+    cursor: crosshair;
+    overflow: hidden;
+  }
+  .hero-inner { position: relative; z-index: 1; pointer-events: none; }
+  .hero-inner :global(a), .hero-inner :global(button) { pointer-events: auto; cursor: pointer; }
+  .hero-inner > * { pointer-events: auto; cursor: auto; width: fit-content; }
+  .hero-inner h1, .hero-inner p { cursor: text; }
+  h1 {
+    font-size: clamp(44px, 7.4vw, 96px);
+    letter-spacing: -0.045em;
+    margin: 22px 0 14px;
+  }
+  .who { display: flex; align-items: center; gap: 18px; }
+  .who :global(.avatar) { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bg); box-shadow: 0 0 0 2px var(--teal), 0 10px 30px -10px rgb(0 0 0 / 0.6); }
+  .focus {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 2.9vw, 34px);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin: 0 0 24px;
+    background: linear-gradient(100deg, var(--teal) 10%, color-mix(in srgb, var(--teal) 40%, var(--violet)) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    width: fit-content;
+  }
+  .lede { font-size: clamp(17px, 1.8vw, 19.5px); color: var(--text-2); max-width: 600px; line-height: 1.6; }
+  .lede a { color: var(--text); border-bottom: 1px solid var(--teal); }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+
+  .numbers { border-block: 1px solid var(--border); background: var(--bg-raise); }
+  .numbers .grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .numbers .grid > div { padding: 34px 28px 32px 0; display: grid; gap: 6px; }
+  .numbers .grid > div + div { padding-left: 28px; border-left: 1px solid var(--border); }
+  .numbers strong { font-family: var(--font-display); font-size: clamp(24px, 2.7vw, 34px); letter-spacing: -0.03em; font-weight: 600; line-height: 1; }
+  .numbers span { color: var(--muted); font-size: 14.5px; line-height: 1.4; }
+  @media (max-width: 820px) {
+    .numbers .grid { grid-template-columns: 1fr 1fr; column-gap: 24px; }
+    .numbers .grid > div, .numbers .grid > div + div { padding: 26px 0 24px; border-left: 0; }
+    .numbers .grid > div:nth-child(n + 3) { border-top: 1px solid var(--border); }
+  }
+
+  .accent-teal { --accent: var(--teal); }
+  .accent-amber { --accent: var(--amber); }
+  .cards { display: grid; gap: 28px; }
+  .card {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--bg-raise);
+    box-shadow: var(--shadow);
+    transition: border-color 0.25s ease, transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.7s ease;
+  }
+  .card:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); transform: translateY(-3px); }
+  .card:nth-child(even) .visual { order: 2; }
+  .visual {
+    position: relative;
+    min-height: 340px;
+    overflow: hidden;
+    background:
+      radial-gradient(500px 300px at 30% 20%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%),
+      var(--surface);
+  }
+  .shot {
+    position: absolute;
+    inset: 11% -8% -20% 9%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.55);
+    transform: perspective(1400px) rotateY(-9deg) rotateX(3deg);
+    transform-origin: left center;
+    transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .card:hover .shot { transform: perspective(1400px) rotateY(-4deg) rotateX(1deg) translateY(-6px); }
+  .shot :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+  .info { padding: clamp(26px, 3.4vw, 44px); display: flex; flex-direction: column; gap: 14px; }
+  .top { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); }
+  .when { color: var(--accent); }
+  .card h3 { font-size: clamp(30px, 3.6vw, 44px); letter-spacing: -0.035em; }
+  .card p { color: var(--text-2); margin: 0; font-size: 16px; }
+  .more { margin-top: auto; padding-top: 10px; font-weight: 550; font-size: 15px; display: inline-flex; gap: 8px; color: var(--text); }
+  .more .arrow { transition: transform 0.2s ease; color: var(--accent); }
+  .card:hover .more .arrow { transform: translateX(4px); }
+  @media (max-width: 900px) {
+    .card { grid-template-columns: 1fr; }
+    .card:nth-child(even) .visual { order: 0; }
+    .visual { min-height: 240px; }
+  }
+
+  .alt { background: var(--bg-raise); border-top: 1px solid var(--border); }
+  .bg { display: grid; grid-template-columns: 1fr 1.25fr; gap: clamp(28px, 5vw, 72px); align-items: start; }
+  .edu { padding: clamp(26px, 3vw, 38px); border: 1px solid var(--border); border-radius: 20px; background: radial-gradient(420px 220px at 0% 0%, color-mix(in srgb, var(--teal) 12%, transparent), transparent 70%), var(--bg-raise); }
+  .gpa { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+  .gpa strong { font-family: var(--font-display); font-size: clamp(64px, 8vw, 104px); line-height: 0.9; letter-spacing: -0.05em; color: var(--teal); font-weight: 600; }
+  .gpa span { font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
+  .edu h3 { font-size: 23px; line-height: 1.25; margin-bottom: 12px; }
+  .edu p { color: var(--text-2); margin: 0 0 4px; font-size: 15.5px; }
+  .exp { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+  .exp li { display: grid; grid-template-columns: 170px 1fr; gap: 16px; padding: 22px 0; border-bottom: 1px solid var(--border); }
+  .exp .when { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 4px; }
+  .exp h3 { font-size: 19px; letter-spacing: -0.015em; }
+  .exp p { margin: 4px 0 0; color: var(--text-2); font-size: 15.5px; }
+  .exp .all { display: block; border-bottom: 0; }
+  .exp .all a { font-weight: 550; color: var(--text); }
+  .exp .all a span { color: var(--teal); }
+  .exp .all a:hover { color: var(--teal); }
+  @media (max-width: 900px) { .bg { grid-template-columns: 1fr; } .exp li { grid-template-columns: 1fr; gap: 4px; } }
+</style>

@@ -1,0 +1,44 @@
+---
+import ArchDiagram from '../ArchDiagram.astro';
+import type { DNode, DEdge } from '../ArchDiagram.astro';
+
+const nodes: DNode[] = [
+  { id: 'clients', label: '', x: 20, y: 50, w: 200, h: 270, kind: 'ghost' },
+  { id: 'web', label: 'Admin web app', sub: 'React 19 · Vite', x: 40, y: 90, w: 160, h: 54, kind: 'client' },
+  { id: 'mobile', label: 'iOS + Android', sub: 'Capacitor · Tap to Pay', x: 40, y: 162, w: 160, h: 54, kind: 'client' },
+  { id: 'public', label: 'Booking pages', sub: 'one per business', x: 40, y: 234, w: 160, h: 54, kind: 'client' },
+  { id: 'api', label: 'Flask API', sub: '632 endpoints · 52 blueprints', x: 330, y: 84, w: 220, h: 84 },
+  { id: 'worker', label: 'Worker', sub: 'background jobs', x: 330, y: 212, w: 220, h: 54 },
+  { id: 'cron', label: 'Cron', sub: 'scheduled jobs', x: 330, y: 288, w: 220, h: 54 },
+  { id: 'pg', label: 'PostgreSQL 16', sub: '127 tables · advisory locks', x: 700, y: 24, w: 230, h: 54, kind: 'store' },
+  { id: 'redis', label: 'Redis', x: 700, y: 96, w: 230, h: 44, kind: 'store' },
+  { id: 's3', label: 'AWS S3', x: 700, y: 158, w: 230, h: 44, kind: 'store' },
+  { id: 'stripe', label: 'Stripe', sub: 'Subscriptions · Connect · Terminal', x: 700, y: 226, w: 230, h: 54, kind: 'external' },
+  { id: 'msg', label: 'Messaging', sub: 'email · SMS · WhatsApp · push', x: 700, y: 304, w: 230, h: 54, kind: 'external' },
+];
+const edges: DEdge[] = [
+  { from: 'clients', to: 'api', tone: 'teal', label: 'REST · JWT', lo: [0, -14], fp: 0.3 },
+  { from: 'api', to: 'pg', tone: 'violet', fp: 0.15 },
+  { from: 'api', to: 'redis', tone: 'violet', fp: 0.38 },
+  { from: 'api', to: 's3', tone: 'violet', fp: 0.62 },
+  { from: 'api', to: 'stripe', tone: 'amber', fp: 0.86, both: true, label: 'webhooks', lo: [14, 16] },
+  { from: 'worker', to: 'msg', tone: 'amber' },
+];
+---
+
+<ArchDiagram
+  title="JustBook architecture: a React admin app, Capacitor mobile apps and public booking pages call one Flask API, which runs on Render beside a worker and cron service and uses PostgreSQL, Redis, S3, Stripe and messaging providers."
+  width={950}
+  height={390}
+  nodes={nodes}
+  edges={edges}
+  groups={[
+    { label: 'Clients', x: 20, y: 50, w: 200, h: 270 },
+    { label: 'Render', x: 310, y: 40, w: 260, h: 322 },
+  ]}
+  legend={[
+    { tone: 'teal', label: 'client traffic' },
+    { tone: 'violet', label: 'data' },
+    { tone: 'amber', label: 'third parties' },
+  ]}
+/>

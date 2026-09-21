@@ -1,0 +1,51 @@
+---
+interface Step { kind: 'sync' | 'async' | 'user'; who: string; text: string }
+interface Props { steps: Step[] }
+const { steps } = Astro.props;
+const tag = { sync: 'gRPC / HTTP', async: 'RabbitMQ', user: 'user' };
+---
+
+<ol class="flow wide">
+  {steps.map((s, i) => (
+    <li class={s.kind} data-reveal style={`--d:${Math.min(i, 6) * 40}ms`}>
+      <span class="n">{String(i + 1).padStart(2, '0')}</span>
+      <div>
+        <div class="head"><b>{s.who}</b><span class="tag">{tag[s.kind]}</span></div>
+        <p set:html={s.text} />
+      </div>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .flow { list-style: none; padding: 0 !important; margin: 2em 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; counter-reset: s; }
+  li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    margin: 0 !important;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-raise);
+    --c: var(--muted);
+  }
+  li.sync { --c: var(--teal); }
+  li.async { --c: var(--amber); }
+  .n { font-family: var(--font-mono); font-size: 12px; color: var(--c); padding-top: 3px; }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  b { color: var(--text); font-weight: 600; font-size: 15px; }
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c);
+    border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  p { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--text-2); }
+  p :global(code) { font-size: 0.85em; }
+</style>

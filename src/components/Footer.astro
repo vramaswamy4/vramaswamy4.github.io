@@ -1,0 +1,62 @@
+---
+const year = new Date().getFullYear();
+const links = [
+  { label: 'Email', href: 'mailto:vinithramaswamy@gmail.com' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/vinith-ramaswamy-6a5964200' },
+  { label: 'GitHub', href: 'https://github.com/vramaswamy4' },
+  { label: 'JustBook', href: 'https://justbookapp.com' },
+  { label: 'CV', href: '/Vinith_Ramaswamy_CV.pdf' },
+];
+---
+
+<footer class="footer" id="contact">
+  <div class="wrap">
+    <div class="cta" data-reveal>
+      <span class="eyebrow">Contact</span>
+      <h2>Looking for a software engineering role in the Bay Area.</h2>
+      <p>
+        Backend, platform, payments, or full stack. Based in San Jose, U.S. permanent resident, no sponsorship needed.
+      </p>
+      <div class="actions">
+        <a class="btn primary" href="mailto:vinithramaswamy@gmail.com">
+          vinithramaswamy@gmail.com <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="btn" href="/Vinith_Ramaswamy_CV.pdf" target="_blank" rel="noopener">Download CV</a>
+      </div>
+    </div>
+    <div class="base">
+      <span>© {year} Vinith Ramaswamy</span>
+      <ul>
+        {links.map((l) => (
+          <li><a href={l.href} target={l.href.startsWith('http') ? '_blank' : undefined} rel="noopener">{l.label}</a></li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--border);
+    background:
+      radial-gradient(900px 380px at 15% 0%, color-mix(in srgb, var(--teal) 9%, transparent), transparent 70%),
+      var(--bg-raise);
+  }
+  .cta { padding: clamp(64px, 9vw, 112px) 0 clamp(48px, 6vw, 72px); max-width: 760px; display: grid; gap: 18px; }
+  .cta h2 { font-size: clamp(30px, 4.4vw, 50px); }
+  .cta p { color: var(--text-2); font-size: 18px; margin: 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+  .base {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 28px;
+    justify-content: space-between;
+    padding: 26px 0 34px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 14px;
+  }
+  ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; padding: 0; }
+  li a { transition: color 0.15s ease; }
+  li a:hover { color: var(--text); }
+</style>

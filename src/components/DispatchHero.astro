@@ -1,0 +1,523 @@
+---
+// Full-bleed animated background for the home hero: a small simulation of
+// ride-dispatch's nearest-driver matching on a procedural street network.
+---
+
+<div class="sim" data-dispatch aria-hidden="true">
+  <canvas></canvas>
+  <div class="veil"></div>
+</div>
+<div class="hud" data-dispatch-hud aria-hidden="true">
+  <div class="row">
+    <span class="live"><i></i>simulation</span>
+    <span><b data-k="drivers">0</b> drivers</span>
+    <span class="t"><b data-k="pickup">0</b> en route</span>
+    <span class="a"><b data-k="trip">0</b> on trip</span>
+    <span><b data-k="matched">0</b> matched</span>
+  </div>
+  <p>Nearest-driver matching from <a href="/projects/ride-dispatch/">ride-dispatch</a>. Click the map to request a ride.</p>
+</div>
+
+<script>
+  type N = { x: number; y: number; adj: number[] };
+  type Driver = {
+    from: number; to: number; t: number; speed: number;
+    state: 'idle' | 'pickup' | 'trip'; path: number[]; req: Req | null;
+    x: number; y: number; trail: number[];
+  };
+  type Req = {
+    node: number; dest: number; state: 'searching' | 'matched' | 'riding' | 'done' | 'missed';
+    radius: number; age: number; driver: Driver | null; flash: number; fade: number;
+  };
+
+  let cleanup: (() => void) | null = null;
+
+  function start() {
+    cleanup?.();
+    cleanup = null;
+    const root = document.querySelector<HTMLElement>('[data-dispatch]');
+    const hud = document.querySelector<HTMLElement>('[data-dispatch-hud]');
+    const canvas = root?.querySelector('canvas');
+    const host = root?.parentElement;
+    if (!root || !canvas || !host) return;
+    const ctx = canvas.getContext('2d')!;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let W = 0, H = 0, dpr = 1;
+    let nodes: N[] = [];
+    let edges: [number, number, boolean][] = [];
+    let drivers: Driver[] = [];
+    let reqs: Req[] = [];
+    let roads: HTMLCanvasElement | null = null;
+    let glowT: HTMLCanvasElement, glowA: HTMLCanvasElement, glowW: HTMLCanvasElement;
+    let matched = 0;
+    let spawnIn = 0.6;
+    let raf = 0, last = 0, running = false, visible = true, hudAt = -1e9;
+    let C = { teal: '#3ee0a1', amber: '#ffb84d', text: '#e8ecf3', road: '', avenue: '', light: false };
+
+    const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+    const pick = <T,>(arr: T[]) => arr[(Math.random() * arr.length) | 0];
+
+    function readColors() {
+      const cs = getComputedStyle(document.documentElement);
+      const light = document.documentElement.dataset.theme === 'light';
+      C = {
+        teal: cs.getPropertyValue('--teal').trim(),
+        amber: cs.getPropertyValue('--amber').trim(),
+        text: cs.getPropertyValue('--text').trim(),
+        road: light ? 'rgba(14,19,27,0.085)' : 'rgba(255,255,255,0.075)',
+        avenue: light ? 'rgba(14,19,27,0.15)' : 'rgba(255,255,255,0.13)',
+        light,
+      };
+      const sprite = (color: string) => {
+        const s = document.createElement('canvas');
+        s.width = s.height = 64;
+        const g = s.getContext('2d')!;
+        const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, color);
+        grad.addColorStop(0.25, color + '66');
+        grad.addColorStop(1, color + '00');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, 64, 64);
+        return s;
+      };
+      glowT = sprite(C.teal);
+      glowA = sprite(C.amber);
+      glowW = sprite('#ffffff');
+    }
+
+    function build() {
+      const r = host!.getBoundingClientRect();
+      W = Math.max(320, r.width);
+      H = Math.max(320, r.height);
+      dpr = Math.min(2, devicePixelRatio || 1);
+      canvas!.width = W * dpr;
+      canvas!.height = H * dpr;
+      canvas!.style.width = W + 'px';
+      canvas!.style.height = H + 'px';
+
+      const s = Math.max(54, Math.min(84, W / 17));
+      const cols = Math.ceil(W / s) + 2;
+      const rows = Math.ceil(H / s) + 2;
+      nodes = [];
+      edges = [];
+      const id = (c: number, rr: number) => rr * cols + c;
+      for (let rr = 0; rr < rows; rr++)
+        for (let c = 0; c < cols; c++)
+          nodes.push({ x: (c - 0.5) * s + rnd(-0.16, 0.16) * s, y: (rr - 0.5) * s + rnd(-0.16, 0.16) * s, adj: [] });
+      const link = (a: number, b: number, av: boolean) => {
+        nodes[a].adj.push(b);
+        nodes[b].adj.push(a);
+        edges.push([a, b, av]);
+      };
+      for (let rr = 0; rr < rows; rr++)
+        for (let c = 0; c < cols; c++) {
+          const avR = rr % 4 === 1, avC = c % 5 === 2;
+          if (c + 1 < cols && (avR || Math.random() > 0.15)) link(id(c, rr), id(c + 1, rr), avR);
+          if (rr + 1 < rows && (avC || Math.random() > 0.15)) link(id(c, rr), id(c, rr + 1), avC);
+          if (c + 1 < cols && rr + 1 < rows && Math.random() < 0.05) link(id(c, rr), id(c + 1, rr + 1), false);
+        }
+
+      roads = document.createElement('canvas');
+      roads.width = W * dpr;
+      roads.height = H * dpr;
+      const g = roads.getContext('2d')!;
+      g.scale(dpr, dpr);
+      g.lineCap = 'round';
+      for (const pass of [false, true]) {
+        g.beginPath();
+        for (const [a, b, av] of edges) {
+          if (av !== pass) continue;
+          g.moveTo(nodes[a].x, nodes[a].y);
+          g.lineTo(nodes[b].x, nodes[b].y);
+        }
+        g.strokeStyle = pass ? C.avenue : C.road;
+        g.lineWidth = pass ? 1.6 : 1;
+        g.stroke();
+      }
+
+      const usable = nodes.map((n, i) => (n.adj.length ? i : -1)).filter((i) => i >= 0);
+      const count = Math.round(Math.max(16, Math.min(46, (W * H) / 24000)));
+      drivers = [];
+      for (let i = 0; i < count; i++) {
+        const from = pick(usable);
+        const to = pick(nodes[from].adj);
+        drivers.push({
+          from, to, t: Math.random(), speed: rnd(34, 58), state: 'idle', path: [], req: null,
+          x: nodes[from].x, y: nodes[from].y, trail: [],
+        });
+      }
+      reqs = [];
+    }
+
+    function bfs(a: number, b: number): number[] | null {
+      if (a === b) return [a];
+      const prev = new Int32Array(nodes.length).fill(-1);
+      prev[a] = a;
+      const q = [a];
+      for (let h = 0; h < q.length; h++) {
+        const u = q[h];
+        for (const v of nodes[u].adj) {
+          if (prev[v] !== -1) continue;
+          prev[v] = u;
+          if (v === b) {
+            const out = [b];
+            for (let w = b; w !== a; w = prev[w]) out.push(prev[w]);
+            return out.reverse();
+          }
+          q.push(v);
+        }
+      }
+      return null;
+    }
+
+    const onScreen = (i: number, m = 30) =>
+      nodes[i].adj.length > 0 && nodes[i].x > m && nodes[i].x < W - m && nodes[i].y > m && nodes[i].y < H - m;
+
+    function request(at?: number) {
+      const pool = nodes.map((_, i) => i).filter((i) => onScreen(i));
+      if (!pool.length) return;
+      // bias automatic requests to the right-hand side, away from the headline
+      let node = at ?? pick(pool);
+      if (at === undefined && W > 900) for (let k = 0; k < 4 && nodes[node].x < W * 0.45; k++) node = pick(pool);
+      let dest = pick(pool);
+      for (let k = 0; k < 6 && Math.hypot(nodes[dest].x - nodes[node].x, nodes[dest].y - nodes[node].y) < 220; k++)
+        dest = pick(pool);
+      reqs.push({ node, dest, state: 'searching', radius: 0, age: 0, driver: null, flash: 0, fade: 1 });
+    }
+
+    function step(dt: number) {
+      spawnIn -= dt;
+      const active = reqs.filter((r) => r.state !== 'done' && r.state !== 'missed').length;
+      if (spawnIn <= 0 && active < Math.max(3, drivers.length / 4)) {
+        request();
+        spawnIn = rnd(1.4, 3.2);
+      }
+
+      for (const r of reqs) {
+        r.age += dt;
+        if (r.flash > 0) r.flash -= dt;
+        if (r.state === 'searching') {
+          r.radius += 230 * dt;
+          const p = nodes[r.node];
+          let best: Driver | null = null, bd = Infinity;
+          for (const d of drivers) {
+            if (d.state !== 'idle') continue;
+            const dist = Math.hypot(d.x - p.x, d.y - p.y);
+            if (dist <= r.radius && dist < bd) { bd = dist; best = d; }
+          }
+          if (best) {
+            const path = bfs(best.to, r.node);
+            if (path) {
+              best.state = 'pickup';
+              best.path = path.slice(1);
+              best.req = r;
+              best.speed = rnd(78, 96);
+              r.driver = best;
+              r.state = 'matched';
+              r.flash = 0.55;
+              matched++;
+            }
+          } else if (r.radius > Math.max(W, H) * 0.7) r.state = 'missed';
+        }
+        if (r.state === 'done' || r.state === 'missed') r.fade -= dt * 1.6;
+      }
+      reqs = reqs.filter((r) => r.fade > 0);
+
+      for (const d of drivers) {
+        const a = nodes[d.from], b = nodes[d.to];
+        const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        d.t += (d.speed * dt) / len;
+        while (d.t >= 1) {
+          d.t -= 1;
+          const arrived = d.to;
+          if (d.path.length) {
+            d.from = arrived;
+            d.to = d.path.shift()!;
+          } else if (d.state === 'pickup' && d.req) {
+            const path = bfs(arrived, d.req.dest);
+            d.state = 'trip';
+            d.req.state = 'riding';
+            d.path = path ? path.slice(1) : [];
+            d.from = arrived;
+            d.to = d.path.length ? d.path.shift()! : pick(nodes[arrived].adj);
+          } else {
+            if (d.state === 'trip' && d.req) {
+              d.req.state = 'done';
+              d.req = null;
+              d.state = 'idle';
+              d.speed = rnd(34, 58);
+            }
+            const prev = d.from;
+            const opts = nodes[arrived].adj;
+            let next = pick(opts);
+            // prefer to keep heading the same way; avoid immediate U-turns
+            if (opts.length > 1) {
+              const hx = nodes[arrived].x - nodes[prev].x, hy = nodes[arrived].y - nodes[prev].y;
+              let bestDot = -Infinity;
+              const straight = Math.random() < 0.65;
+              for (const o of opts) {
+                if (o === prev) continue;
+                const dot = (nodes[o].x - nodes[arrived].x) * hx + (nodes[o].y - nodes[arrived].y) * hy + (straight ? 0 : rnd(-1e4, 1e4));
+                if (dot > bestDot) { bestDot = dot; next = o; }
+              }
+            }
+            d.from = arrived;
+            d.to = next;
+          }
+        }
+        const A = nodes[d.from], B = nodes[d.to];
+        d.x = A.x + (B.x - A.x) * d.t;
+        d.y = A.y + (B.y - A.y) * d.t;
+        d.trail.push(d.x, d.y);
+        const max = d.state === 'idle' ? 24 : 44;
+        while (d.trail.length > max) d.trail.splice(0, 2);
+      }
+    }
+
+    function draw(now: number) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      if (roads) ctx.drawImage(roads, 0, 0, W, H);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // planned routes
+      for (const d of drivers) {
+        if (d.state === 'idle') continue;
+        ctx.beginPath();
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(nodes[d.to].x, nodes[d.to].y);
+        for (const i of d.path) ctx.lineTo(nodes[i].x, nodes[i].y);
+        ctx.strokeStyle = d.state === 'trip' ? C.amber : C.teal;
+        ctx.globalAlpha = d.state === 'trip' ? 0.5 : 0.38;
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash(d.state === 'trip' ? [] : [3, 6]);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // requests
+      for (const r of reqs) {
+        const p = nodes[r.node];
+        const pulse = 0.5 + 0.5 * Math.sin(now / 260 + r.node);
+        ctx.globalAlpha = r.fade;
+        if (r.state === 'searching') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r.radius, 0, Math.PI * 2);
+          ctx.strokeStyle = C.amber;
+          ctx.globalAlpha = Math.max(0, 0.42 - r.radius / 900) * r.fade;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.fillStyle = C.amber;
+          ctx.globalAlpha *= 0.12;
+          ctx.fill();
+        }
+        if (r.flash > 0 && r.driver) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(r.driver.x, r.driver.y);
+          ctx.strokeStyle = C.text;
+          ctx.globalAlpha = (r.flash / 0.55) * 0.8;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+        if (r.state === 'searching' || r.state === 'matched' || r.state === 'missed') {
+          ctx.globalAlpha = r.fade * (r.state === 'missed' ? 0.4 : 1);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 6 + pulse * 5, 0, Math.PI * 2);
+          ctx.strokeStyle = C.amber;
+          ctx.lineWidth = 1.4;
+          ctx.globalAlpha *= 0.75 - pulse * 0.45;
+          ctx.stroke();
+          ctx.globalAlpha = r.fade;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 3.4, 0, Math.PI * 2);
+          ctx.fillStyle = C.amber;
+          ctx.fill();
+        }
+        if (r.state === 'matched' || r.state === 'riding') {
+          const q = nodes[r.dest];
+          ctx.globalAlpha = 0.9 * r.fade;
+          ctx.strokeStyle = C.amber;
+          ctx.lineWidth = 1.4;
+          ctx.strokeRect(q.x - 4, q.y - 4, 8, 8);
+        }
+      }
+
+      // drivers
+      for (const d of drivers) {
+        const col = d.state === 'trip' ? C.amber : C.teal;
+        const n = d.trail.length;
+        for (let i = 2; i < n; i += 2) {
+          ctx.beginPath();
+          ctx.moveTo(d.trail[i - 2], d.trail[i - 1]);
+          ctx.lineTo(d.trail[i], d.trail[i + 1]);
+          ctx.strokeStyle = col;
+          ctx.globalAlpha = (i / n) * (d.state === 'idle' ? 0.35 : 0.7);
+          ctx.lineWidth = d.state === 'idle' ? 1.4 : 2;
+          ctx.stroke();
+        }
+        if (!C.light) {
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = d.state === 'idle' ? 0.5 : 0.85;
+          const g = d.state === 'trip' ? glowA : d.state === 'pickup' ? glowW : glowT;
+          const sz = d.state === 'idle' ? 26 : 38;
+          ctx.drawImage(g, d.x - sz / 2, d.y - sz / 2, sz, sz);
+          ctx.globalCompositeOperation = 'source-over';
+        }
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.state === 'idle' ? 2.6 : 3.6, 0, Math.PI * 2);
+        ctx.fillStyle = d.state === 'pickup' ? C.text : col;
+        ctx.fill();
+        if (d.state === 'pickup') {
+          ctx.strokeStyle = C.teal;
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      if (hud && now - hudAt > 250) {
+        hudAt = now;
+        const set = (k: string, v: number) => {
+          const el = hud.querySelector(`[data-k="${k}"]`);
+          if (el) el.textContent = String(v);
+        };
+        set('drivers', drivers.length);
+        set('pickup', drivers.filter((d) => d.state === 'pickup').length);
+        set('trip', drivers.filter((d) => d.state === 'trip').length);
+        set('matched', matched);
+      }
+    }
+
+    function frame(now: number) {
+      if (!running) return;
+      const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
+      last = now;
+      step(dt);
+      draw(now);
+      raf = requestAnimationFrame(frame);
+    }
+
+    function setRunning(on: boolean) {
+      if (on === running) return;
+      running = on;
+      if (on) {
+        last = performance.now();
+        raf = requestAnimationFrame(frame);
+      } else cancelAnimationFrame(raf);
+    }
+
+    function reset() {
+      readColors();
+      build();
+      // warm up so the first paint already shows a busy city
+      for (let i = 0; i < (reduced ? 900 : 360); i++) step(1 / 30);
+      draw(performance.now());
+      if (!reduced) setRunning(visible && !document.hidden);
+    }
+
+    const onClick = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('a, button, h1, p, .who')) return;
+      if (String(getSelection() ?? '').length) return;
+      const r = canvas.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      let best = -1, bd = Infinity;
+      nodes.forEach((n, i) => {
+        if (!n.adj.length) return;
+        const dd = (n.x - x) ** 2 + (n.y - y) ** 2;
+        if (dd < bd) { bd = dd; best = i; }
+      });
+      if (best >= 0) {
+        request(best);
+        if (reduced) { for (let i = 0; i < 40; i++) step(1 / 30); draw(performance.now()); }
+      }
+    };
+
+    let rt = 0;
+    const onResize = () => {
+      clearTimeout(rt);
+      rt = window.setTimeout(() => {
+        const r = host.getBoundingClientRect();
+        if (Math.abs(r.width - W) > 40 || Math.abs(r.height - H) > 120) reset();
+      }, 180);
+    };
+    const onVis = () => !reduced && setRunning(visible && !document.hidden);
+    const onTheme = () => { readColors(); build(); for (let i = 0; i < 240; i++) step(1 / 30); draw(performance.now()); };
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; onVis(); });
+
+    io.observe(host);
+    host.addEventListener('click', onClick);
+    window.addEventListener('resize', onResize);
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('themechange', onTheme);
+    reset();
+
+    cleanup = () => {
+      setRunning(false);
+      io.disconnect();
+      host.removeEventListener('click', onClick);
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('themechange', onTheme);
+    };
+  }
+
+  document.addEventListener('astro:page-load', start);
+  document.addEventListener('astro:before-swap', () => { cleanup?.(); cleanup = null; });
+</script>
+
+<style>
+  .sim { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+  canvas { display: block; }
+  .veil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 88%, transparent) 30%, color-mix(in srgb, var(--bg) 35%, transparent) 58%, transparent 80%),
+      linear-gradient(0deg, var(--bg) 0%, transparent 22%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 80%, transparent) 0%, transparent 16%);
+  }
+  .hud {
+    position: absolute;
+    right: var(--gutter);
+    bottom: clamp(20px, 4vw, 40px);
+    z-index: 2;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+    max-width: min(520px, 100% - var(--gutter) * 2);
+  }
+  .row {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 16px;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .row b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .row .t b { color: var(--teal); }
+  .row .a b { color: var(--amber); }
+  .live { display: inline-flex; align-items: center; gap: 7px; text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px; }
+  .live i { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: blink 1.6s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  .hud p { margin: 10px 4px 0; font-family: var(--font-body); font-size: 13px; }
+  .hud a { color: var(--text-2); border-bottom: 1px solid var(--border-strong); }
+  .hud a:hover { color: var(--teal); border-color: var(--teal); }
+  @media (max-width: 760px) {
+    .veil {
+      background:
+        linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 40%, color-mix(in srgb, var(--bg) 78%, transparent) 100%);
+    }
+    .hud { position: relative; right: auto; bottom: auto; text-align: left; margin: 36px var(--gutter) 0; order: 2; }
+    .row { justify-content: flex-start; border-radius: 14px; }
+  }
+</style>

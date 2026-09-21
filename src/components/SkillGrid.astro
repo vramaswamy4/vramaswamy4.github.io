@@ -1,0 +1,43 @@
+---
+import SkillIcon from './SkillIcon.astro';
+import { skillGroups } from '../data/skills';
+---
+
+<div class="groups">
+  {skillGroups.map((g, gi) => (
+    <div class="group" data-reveal style={`--d:${gi * 60}ms`}>
+      <h3>{g.title}</h3>
+      <ul>
+        {g.items.map((s) => (
+          <li><SkillIcon icon={s.icon} /><span>{s.name}</span></li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</div>
+
+<style>
+  .groups { display: grid; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--bg); }
+  .group { display: grid; grid-template-columns: 210px 1fr; gap: 12px 28px; padding: 24px 26px; align-items: start; }
+  .group + .group { border-top: 1px solid var(--border); }
+  h3 { font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-top: 11px; }
+  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 14px 8px 11px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--text);
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  @media (max-width: 760px) {
+    .group { grid-template-columns: 1fr; padding: 20px 18px; }
+    h3 { padding-top: 0; }
+  }
+</style>

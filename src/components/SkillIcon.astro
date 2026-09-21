@@ -1,0 +1,50 @@
+---
+import * as si from 'simple-icons';
+
+interface Props { icon: string; size?: number }
+const { icon, size = 20 } = Astro.props;
+
+// Stroke glyphs for skills that have no brand mark in simple-icons.
+const generic: Record<string, string> = {
+  db: 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zm0 0v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  cloud: 'M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.5a3.75 3.75 0 0 1-.5 7.5H7z',
+  rpc: 'M4 8h13m0 0-3.5-3.5M17 8l-3.5 3.5M20 16H7m0 0 3.5-3.5M7 16l3.5 3.5',
+  test: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3M7.5 15h9',
+  msg: 'M4 5h16v11H9l-5 4V5z',
+  key: 'M14.5 9.5a4 4 0 1 1-3.6 5.7L4 15v-3h3v-2h3l1.1-1.1a4 4 0 0 1 3.4.6zM16 12h.01',
+  bucket: 'M4 6h16l-2 13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5L4 6zm0 0c0-1.7 3.6-3 8-3s8 1.3 8 3M5 12c2 1.2 12 1.2 14 0',
+  mail: 'M3 6h18v12H3V6zm0 1 9 7 9-7',
+  shield: 'M12 3l7 3v5.5c0 4.4-2.9 8-7 9.5-4.1-1.5-7-5.1-7-9.5V6l7-3zm-3 9 2.2 2.2L15 10.5',
+};
+
+const key = 'si' + icon[0].toUpperCase() + icon.slice(1);
+const brand = (si as Record<string, { path: string; hex: string } | undefined>)[key];
+
+// Keep brand colours, but make sure they stay readable on both themes.
+let dark = 'var(--text-2)', light = 'var(--text-2)';
+if (brand) {
+  const n = parseInt(brand.hex, 16);
+  const lin = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const lum = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  const hex = `#${brand.hex}`;
+  dark = lum < 0.025 ? 'var(--text)' : lum < 0.16 ? `color-mix(in srgb, ${hex} 62%, white)` : hex;
+  light = lum < 0.025 ? 'var(--text)' : lum > 0.45 ? `color-mix(in srgb, ${hex} 62%, black)` : hex;
+}
+---
+
+{brand ? (
+  <svg class="si" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" style={`--d:${dark};--l:${light}`}>
+    <path d={brand.path} />
+  </svg>
+) : (
+  <svg class="si gen" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" style={`--d:${dark};--l:${light}`}>
+    <path d={generic[icon] ?? generic.rpc} />
+  </svg>
+)}
+
+<style>
+  .si { flex: none; fill: var(--d); }
+  .si.gen { fill: none; stroke: var(--d); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  :global([data-theme='light']) .si { fill: var(--l); }
+  :global([data-theme='light']) .si.gen { fill: none; stroke: var(--l); }
+</style>

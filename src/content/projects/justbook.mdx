@@ -1,0 +1,87 @@
+---
+title: JustBook
+tagline: A booking and payments platform for appointment businesses. Live on web, iOS and Android.
+summary: Founder and sole engineer. Idea to production in 15 months, covering product, architecture, code, payments and operations. About 340K lines, 632 endpoints, 5,400+ tests.
+order: 1
+role: Founder and sole engineer
+period: May 2025 – present
+status: Live since August 2026
+stack: [Python, Flask, SQLAlchemy, PostgreSQL, Redis, React 19, TypeScript, Stripe, Capacitor, Cloudflare Workers, Playwright]
+links:
+  - { label: justbookapp.com, href: 'https://justbookapp.com' }
+  - { label: App Store, href: 'https://apps.apple.com/us/app/justbook-biz/id6803725866' }
+  - { label: Google Play, href: 'https://play.google.com/store/apps/details?id=com.justbookapp.business' }
+  - { label: Public docs, href: 'https://docs.justbookapp.com' }
+accent: amber
+---
+
+import JustBookArch from '../../components/diagrams/JustBookArch.astro';
+import Stats from '../../components/Stats.astro';
+import Shot from '../../components/Shot.astro';
+import calendar from '../../assets/projects/justbook-calendar.png';
+import examples from '../../assets/projects/justbook-examples.png';
+
+## What it is
+
+JustBook is a booking and payments platform for salons, barbershops, clinics and other appointment businesses. Each business gets its own branded booking page, an admin app that runs the day (calendar, team, clients, inventory, marketing), and in-person payments on a card reader or straight on a phone.
+
+I took it from idea to production alone: product, architecture, code, payments and operations. It has been live on web, iOS and Android since August 2026.
+
+<Stats items={[
+  { value: '~340K', label: 'lines of application code' },
+  { value: '632', label: 'REST endpoints in 52 blueprints' },
+  { value: '127', label: 'PostgreSQL tables, 129 migrations' },
+  { value: '5,400+', label: 'tests: pytest, Vitest, Playwright' },
+  { value: '19', label: 'custom CI guards that fail the build' },
+  { value: '76', label: 'dated architecture decisions' },
+]} />
+
+<Shot src={calendar} alt="The JustBook admin calendar showing a day of appointments across three stylists" url="app · calendar" caption="The admin calendar. Every slot on it comes from the same availability engine the public booking page uses." />
+
+## Architecture
+
+A deliberate monolith: one Flask API, one PostgreSQL database, one React app. With one engineer, every network boundary I didn't add is a class of failure I never had to debug.
+
+<JustBookArch />
+
+- **Backend.** Python, Flask and SQLAlchemy on Render as three services: API, background worker and cron. PostgreSQL 16 with Alembic migrations run without downtime. Redis alongside it. Off-platform backups every day, with restore drills.
+- **Frontend.** React 19 and Vite. Every screen was designed in Figma before it was built.
+- **Mobile.** The same app on iOS and Android through Capacitor, with native Tap to Pay, push notifications (APNs and FCM), passkeys and barcode scanning.
+- **Edge and storage.** Cloudflare Workers, AWS S3, Sentry, and a staging environment that mirrors production.
+- **Messaging.** Transactional email, Twilio SMS, and WhatsApp with 34 Meta-approved templates.
+
+## The availability engine
+
+"When can this client book?" sounds like one query. It is the hardest problem in the product, because the answer depends on the stylist's schedule, existing appointments, temporary holds from people mid-checkout, time off, buffers between services, and the length of the service being booked, and because two people can ask at the same moment and both be told yes.
+
+**One engine, three callers.** Slots are generated on a fixed grid over per-stylist conflict indexes built from appointments, holds, time-off and buffers. The public booking page, the admin calendar and the waitlist all call the same code, so they can never disagree about whether a slot is free.
+
+**Double bookings are impossible, not unlikely.** Every path that creates a booking re-validates the slot under a per-slot PostgreSQL advisory lock. A stale cache can show a slot that has just gone; the worst outcome is a `409` and a fresh list, never two people in one chair.
+
+**Fast on the hot path.** The booking flow went from about 0.8 s to a single query on warm hits, using request-scoped memoization and a per-worker TTL cache that is invalidated by events rather than by time alone. A query-budget test in CI fails the build if the count creeps back up.
+
+I'm extracting the engine into a public, tested library with a full write-up. It will be linked here.
+
+## Payments
+
+Stripe Subscriptions for the platform's own billing, Connect direct charges so each business is paid into its own account, and Terminal for in-person payments on S700 and M2 readers and Tap to Pay on iPhone and Android.
+
+Webhooks are handled exactly once across all three. Every mutation that moves money carries an idempotency key, and settlement state is derived rather than stored, so a retried or out-of-order webhook cannot double-charge or mark an unpaid booking as paid.
+
+## Tenant isolation as a build invariant
+
+Every business's data is scoped on the server, on every route, through one generic access-control guard. A business can also have branches, and scoping covers both.
+
+I didn't want isolation to depend on remembering. Nineteen custom CI guards fail the build on things like a route without a guard, a response that breaks the error contract, documentation that has drifted from the code it describes, or a secret in a log line. On top of that: role-based access control, JWT sessions, TOTP and WebAuthn passkeys, rate limiting, an audit log, and a register for GDPR privacy requests.
+
+One modelling decision I'd defend: in the booth-rental model, each renter gets their own tenant linked to the venue rather than nested under it. A renter is an independent business with their own clients and money. Making them a sub-object of the salon would have leaked that boundary into every query.
+
+<Shot src={examples} alt="The JustBook examples page showing demo businesses, each with different branding, running on the live product" url="justbookapp.com/examples" caption="Twelve demo businesses on the live product, each wearing its own branding." />
+
+## How it was built
+
+Most of the code was written with AI coding agents running concurrently on one shared tree. What made that work was not the agents. It was the rules around them: a 640-line engineering-standards document, 76 dated architecture decisions, and machine-checked invariants that fail the build when the rules are broken. I own every architecture decision in that record, and I can explain each one.
+
+## Why the code is private
+
+JustBook is a live commercial product with customer data flows, Stripe and Twilio integrations, and legal documents, so the repositories stay private. What you can see: [the product](https://justbookapp.com), the apps on the [App Store](https://apps.apple.com/us/app/justbook-biz/id6803725866) and [Google Play](https://play.google.com/store/apps/details?id=com.justbookapp.business), [the public docs](https://docs.justbookapp.com), the [live example businesses](https://justbookapp.com/examples), and soon the availability engine as its own open repository.

@@ -1,0 +1,40 @@
+---
+import ArchDiagram from '../ArchDiagram.astro';
+import type { DNode, DEdge } from '../ArchDiagram.astro';
+
+const nodes: DNode[] = [
+  { id: 'rider', label: 'Rider UI', x: 40, y: 150, w: 140, h: 46, kind: 'client' },
+  { id: 'driverui', label: 'Driver UI', x: 40, y: 220, w: 140, h: 46, kind: 'client' },
+  { id: 'gw', label: 'API gateway', sub: 'HTTP · WebSocket', x: 270, y: 170, w: 170, h: 70 },
+  { id: 'svc', label: '', x: 510, y: 24, w: 220, h: 346, kind: 'ghost' },
+  { id: 'trip', label: 'Trip service', sub: 'MongoDB · OSRM', x: 530, y: 62, w: 180, h: 58 },
+  { id: 'drv', label: 'Driver service', sub: 'Redis geo index', x: 530, y: 168, w: 180, h: 58 },
+  { id: 'pay', label: 'Payment service', sub: 'Stripe Checkout', x: 530, y: 274, w: 180, h: 58 },
+  { id: 'rmq', label: 'RabbitMQ', x: 830, y: 40, w: 60, h: 314, kind: 'broker', vertical: true },
+];
+const edges: DEdge[] = [
+  { from: 'rider', to: 'gw', tone: 'teal', both: true, tp: 0.3 },
+  { from: 'driverui', to: 'gw', tone: 'teal', both: true, tp: 0.7, label: 'HTTP + WebSocket', lo: [34, 46] },
+  { from: 'gw', to: 'svc', tone: 'teal', label: 'gRPC', lo: [0, -14] },
+  { from: 'trip', to: 'rmq', tone: 'amber', both: true, tp: 0.16, label: 'events', lo: [0, -12] },
+  { from: 'drv', to: 'rmq', tone: 'amber', both: true, tp: 0.5, label: 'commands', lo: [0, -12] },
+  { from: 'pay', to: 'rmq', tone: 'amber', both: true, tp: 0.84 },
+  { from: 'rmq', to: 'gw', fs: 'b', ts: 'b', tone: 'amber', k: 150, label: 'consume, then push to the right socket', lo: [0, 6] },
+];
+---
+
+<ArchDiagram
+  title="ride-dispatch service architecture: browsers talk to the API gateway, which calls the trip, driver and payment services over gRPC; all four exchange events and commands through RabbitMQ."
+  width={930}
+  height={500}
+  nodes={nodes}
+  edges={edges}
+  groups={[
+    { label: 'Browsers', x: 20, y: 110, w: 180, h: 176 },
+    { label: 'Go services', x: 510, y: 24, w: 220, h: 346 },
+  ]}
+  legend={[
+    { tone: 'teal', label: 'synchronous: the caller needs the answer' },
+    { tone: 'amber', label: 'asynchronous: announce it and move on' },
+  ]}
+/>

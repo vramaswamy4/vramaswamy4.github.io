@@ -1,0 +1,30 @@
+---
+import SkillIcon from './SkillIcon.astro';
+import { iconFor } from '../data/skills';
+interface Props { items: string[] }
+const { items } = Astro.props;
+---
+
+<ul class="stack">
+  {items.map((name) => {
+    const icon = iconFor(name);
+    return <li>{icon && <SkillIcon icon={icon} size={15} />}<span>{name}</span></li>;
+  })}
+</ul>
+
+<style>
+  .stack { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 5px 11px 5px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+</style>

@@ -1,0 +1,132 @@
+---
+title: ride-dispatch
+tagline: A ride-sharing backend in Go microservices, with a real-time driver-location pipeline.
+summary: Five Go services on Kubernetes. gRPC where the caller needs an answer, RabbitMQ where it doesn't, and Kafka into a Redis geo index for driver positions. Metrics, tracing, and a chaos test that kills a pod mid-ride.
+order: 2
+role: Design and build, solo
+period: '2026'
+stack: [Go, gRPC, RabbitMQ, Kafka, Redis, MongoDB, Kubernetes, Prometheus, Grafana, OpenTelemetry, Next.js]
+links:
+  - { label: Source on GitHub, href: 'https://github.com/vramaswamy4/ride-dispatch' }
+accent: teal
+---
+
+import RideServices from '../../components/diagrams/RideServices.astro';
+import RideLocations from '../../components/diagrams/RideLocations.astro';
+import Flow from '../../components/Flow.astro';
+
+## What it is
+
+A rider previews a route and requests a trip. The system finds the nearest available driver, the driver accepts over a WebSocket, and the rider pays through Stripe. Behind that sit five Go services on Kubernetes, two message brokers chosen for two different jobs, and the production plumbing that tells you whether any of it is working: metrics, dashboards, distributed traces, and a test that breaks the system on purpose.
+
+I came to this from a production Flask monolith ([JustBook](/projects/justbook/)), which is a monolith deliberately. This project was about the problems a monolith never makes you face.
+
+## Architecture
+
+<RideServices />
+
+Two communication styles, used on purpose.
+
+**gRPC, synchronous**, when the caller needs the answer to continue. The gateway calls `PreviewTrip` and `CreateTrip` and returns the result to the browser. Contracts live in one `.proto` file and the generated code is shared by both sides, so a breaking change fails at compile time, not at runtime.
+
+**RabbitMQ, asynchronous**, when the caller only needs to announce that something happened. `trip.event.created` doesn't care who is listening. Today that's the driver service, which finds a driver, and the gateway, which tells the rider's socket. Adding a consumer never touches the publisher.
+
+Each Go service has the same layered layout. `domain` holds the models and the interfaces, `service` holds business logic written against those interfaces, and `infrastructure` holds everything that touches the outside world. The trip service ran on an in-memory repository until persistence arrived; swapping in MongoDB changed one constructor call in `main.go`, which is the point of the layout.
+
+## How a ride works
+
+<Flow steps={[
+  { kind: 'user', who: 'Rider', text: 'Picks a pickup and a destination. The UI posts to <code>/trip/preview</code>.' },
+  { kind: 'sync', who: 'Gateway → Trip', text: '<code>PreviewTrip</code> fetches a real road route from OSRM and prices it for each ride package.' },
+  { kind: 'sync', who: 'Gateway → Trip', text: 'The rider confirms. <code>CreateTrip</code> persists the trip and returns its ID.' },
+  { kind: 'async', who: 'Trip → Driver', text: '<code>trip.event.created</code>. The driver service asks Redis for the nearest available drivers.' },
+  { kind: 'async', who: 'Driver → a driver', text: '<code>driver.cmd.trip_request</code> reaches one driver through the gateway\'s WebSocket. If they decline or time out, the next-nearest is asked.' },
+  { kind: 'async', who: 'Driver → Trip', text: '<code>driver.cmd.trip_accept</code> comes back through the gateway onto the queue. The trip is assigned.' },
+  { kind: 'async', who: 'Trip → Payment', text: '<code>trip.event.driver_assigned</code>. The payment service creates a Stripe Checkout session and the rider\'s socket receives it.' },
+  { kind: 'async', who: 'Stripe → Trip', text: 'Stripe\'s webhook, not the browser redirect, is the source of truth. <code>payment.event.success</code> completes the trip.' },
+]} />
+
+The messaging details that make this safe:
+
+- Routing keys are named `<service>.<event|cmd>.<name>`. Events say what happened; commands ask one recipient to do something. Reading a consumer, you can tell which is which.
+- Queues are durable, messages are persistent, and consumers ack manually *after* the work succeeds. A service that dies mid-message gets the message again when it comes back.
+- Failed handlers retry with exponential backoff. Messages that keep failing go to a dead-letter queue instead of looping forever.
+- Every message carries an owner ID, so the gateway knows which socket to push it to without the publishing service knowing sockets exist.
+
+## The driver-location pipeline
+
+Driver positions are the highest-volume data in the system, and three things need them at once: matching, the live map, and trip replay. They travel on their own path, and the driver service holds no fleet state in memory, so any replica can match and a restart loses nothing.
+
+<RideLocations />
+
+- **Keyed by driver ID**, so all of one driver's positions land on one partition and stay in order. Ordering across drivers doesn't matter.
+- **The consumer is idempotent.** `GEOADD` overwrites a driver's previous position, so at-least-once delivery and replays after a crash are harmless. That let me skip exactly-once machinery entirely.
+- **Stale drivers expire.** Redis geo sets have no per-member TTL, so the consumer also writes each driver's last-seen time to a sorted set, and a sweeper removes drivers who have stopped reporting. Without it, a driver who closed the app would stay matchable forever.
+- **Matching is one Redis call**: nearest available drivers within a radius, sorted by distance, filtered by ride package.
+- **A fleet simulator** replays drivers along real OSRM routes, so the map and the matcher see realistic movement without anyone holding a phone.
+
+The animation at the top of [the home page](/) is a small model of this: a radius search expanding from each request until it reaches the nearest free driver.
+
+### The ops map
+
+The same Kafka log feeds an operations view built with MapLibre GL and deck.gl: live driver positions, trip requests bucketed into H3 hexagons as a demand heatmap, and a scrubber that replays a trip by seeking the log by timestamp. Hexagons have uniform neighbour distance, which square geohash cells don't, so density reads correctly in every direction. Replay is the feature that justifies keeping locations in a log at all: the history is already there, and nothing extra is stored for it.
+
+## Proving it recovers
+
+The claim "the system recovers" is cheap, so there is a test for it. With a ride in flight, trip created and driver not yet assigned, a script deletes the trip-service pod and then asserts four things:
+
+1. Kubernetes restarts the pod.
+2. The unacked `driver.cmd.trip_accept` message is redelivered once the service is back.
+3. The trip reaches `driver_assigned` and the rider's socket gets the update.
+4. Nothing was processed twice.
+
+It passes because of choices made earlier, not because of anything in the test. Trip state lives in MongoDB rather than in process memory, queues are durable with manual acks, startup connections retry with backoff, and handlers are idempotent on trip ID.
+
+## Observability
+
+**Metrics.** Every service exposes `/metrics`. Beyond the Go runtime defaults: request rate, error rate and duration per gRPC method and HTTP route; messages published, consumed and dead-lettered per routing key; match latency (trip created to driver offered) as a histogram; Kafka consumer lag.
+
+**Dashboard.** One Grafana dashboard, provisioned from JSON in the repo so it comes up with the cluster. The chaos test shows up on it as a gap in trip-service traffic and a short spike in queue depth that drains on recovery.
+
+**Tracing.** OpenTelemetry spans exported to Jaeger. Trace context travels through gRPC metadata *and* through RabbitMQ message headers, so one trace follows a ride from the rider's HTTP request through every async hop to the payment event. Without the header propagation, every trace would stop at the first queue.
+
+## Stack, and why
+
+| | Used for | Why this one |
+|---|---|---|
+| Go | All backend services | Small static binaries and cheap concurrency. One goroutine per WebSocket connection and per consumer is the natural way to write it. It was also new to me, which was part of the point. |
+| gRPC + Protobuf | Service-to-service calls | Typed contracts shared by client and server, generated from one file. |
+| RabbitMQ | Events and commands | Routing is the feature. Topic exchanges and per-consumer queues fit "this happened, whoever cares" and "you, do this". Acks and dead-lettering come built in. |
+| Kafka | Driver positions | A partitioned, replayable log with independent consumer groups. Three readers consume the same stream at their own pace, and replay is a seek. |
+| Redis geo | Nearest-driver index | `GEOSEARCH` answers "who is closest" in one call, and moving state out of the service lets it scale out. |
+| MongoDB | Trips and fares | A trip is one document that grows through its lifecycle. No joins are needed to read it. |
+| Stripe Checkout | Payments | Hosted payment page, so card data never touches my services. |
+| Kubernetes + Tilt | Running it all | Every service is a Deployment. Tilt rebuilds and syncs a binary into its running pod on save, so the loop is seconds even with everything in a cluster. |
+| Prometheus, Grafana, OpenTelemetry, Jaeger | Metrics and tracing | Metrics answer "is it healthy". Traces answer "where did this ride spend its time". |
+| GitHub Actions | CI | `go vet` and race-enabled tests on every push. |
+
+## Decisions
+
+**Two brokers, not one.** Commands and events are low-volume, routed work items where each message should be handled once and then disappear. Locations are a high-volume stream that several consumers read independently and re-read later. RabbitMQ is good at the first and Kafka at the second; forcing either to do both means rebuilding the other's features by hand. The cost is operating two brokers, which I accepted.
+
+**Redis as the matching index, not the driver service's memory.** In-process state made the driver service a singleton and wiped the fleet on every restart.
+
+**At-least-once everywhere, idempotent handlers.** I never tried for exactly-once. Position writes overwrite, trip transitions check current state before applying, and the chaos test asserts no double-processing.
+
+**Pin minikube to the Docker runtime.** Tilt builds images straight into the cluster's Docker daemon. minikube's newer containerd default has no such daemon, and the failure looks like a registry credentials error. That one cost an afternoon.
+
+## What I learned
+
+**Go changes how you write failure.** Errors are values you handle at every call, not exceptions that bubble. It felt verbose for a week, and then I noticed I could read any function and see every way it fails. Implicit interfaces were the other shift: the trip service defines the repository interface *it* needs, and the Mongo and in-memory implementations satisfy it without declaring anything.
+
+**`context` is the spine of a Go service.** Deadlines and cancellation flow from the HTTP request through gRPC into the database call. In Python I'd never had one object that did that.
+
+**The hard part of microservices is the space between them.** Each service is small and easy. Deciding what is a synchronous call and what is an event, what happens when a consumer dies mid-message, and how to follow one ride across four processes: that's where the time went, and it's where the design is.
+
+**Delivery guarantees are a design input.** Once I accepted at-least-once delivery, idempotent handlers stopped being a nicety and became the requirement everything else leans on. The chaos test is really a test of that one property.
+
+**Pick the data structure, then the database.** "Nearest driver" is a geo query, "what happened on this trip" is a log replay, "the trip" is a document. Each store is there because of the shape of one question.
+
+What I'd do differently: define the metrics before writing the service instead of after, and introduce the persistent store earlier. The in-memory repository hid a class of restart bugs until late.
+
+<p class="credit">The rider and driver UI and the project scaffold come from the starter for Tiago Taquelim's course <em>Complete Microservices with Go</em>; the gateway, trip, driver and payment services follow its design. The location pipeline, Redis matching, metrics, chaos test, CI and ops map are my own.</p>
