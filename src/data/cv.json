@@ -133,7 +133,7 @@
     {
       "id": "ride-dispatch",
       "title": "Flagdown",
-      "subtitle": "Ride-sharing backend in Go microservices",
+      "subtitle": "Full-stack ride-sharing app in Go microservices and Next.js",
       "org": "",
       "note": "",
       "when": "2026",
@@ -141,8 +141,8 @@
       "stack": "Go, gRPC, RabbitMQ, Kafka, Redis, MongoDB, Kubernetes, Prometheus, Grafana, OpenTelemetry, Next.js",
       "bullets": [
         {
-          "lead": "Built a ride-sharing backend as five Go microservices on Kubernetes,",
-          "rest": "using gRPC where the caller needs an answer, RabbitMQ where it only needs to announce an event, and WebSockets for live rider and driver updates."
+          "lead": "Built five Go microservices and a Next.js front end on Kubernetes,",
+          "rest": "with gRPC where the caller needs an answer, RabbitMQ where it only needs to announce an event, and WebSockets for live rider and driver updates."
         },
         {
           "lead": "Made the driver service stateless",
