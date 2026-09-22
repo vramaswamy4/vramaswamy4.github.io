@@ -131,7 +131,7 @@
   ],
   "projects": [
     {
-      "id": "Flagdown",
+      "id": "ride-dispatch",
       "title": "Flagdown",
       "subtitle": "Ride-sharing backend in Go microservices",
       "org": "",
