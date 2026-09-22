@@ -35,52 +35,52 @@
       "stack": "Python, Flask, SQLAlchemy, PostgreSQL, React 19, Vite, Capacitor, Stripe, Twilio, Cloudflare Workers, Render, AWS S3/CloudFront, pytest, Vitest, Playwright",
       "bullets": [
         {
-          "lead": "Built and shipped a multi-tenant booking and payments platform alone in 15 months,",
-          "rest": "live on web, iOS and Android: Flask/PostgreSQL API (633 endpoints, 127 models), React 19 front end, and Capacitor mobile apps with Stripe Tap to Pay."
+          "lead": "Took a booking and payments platform from idea to production alone in 15 months,",
+          "rest": "live on web, iOS and Android: a Flask/PostgreSQL API (633 endpoints, 127 models), a React 19 front end and Capacitor mobile apps."
         },
         {
-          "lead": "Designed the availability engine",
-          "rest": "(time zones, DST, rosters, holds) shared by the booking site, admin calendar and waitlist so they cannot disagree; a constant 5 queries per month view, pinned by query-budget tests; published on GitHub."
+          "lead": "Designed one availability engine for every booking surface",
+          "rest": "(public site, admin calendar, waitlist) so they can never disagree about a free slot; a constant 5 queries per month view, pinned by tests; published on GitHub."
         },
         {
-          "lead": "Eliminated double bookings under concurrency:",
-          "rest": "reproduced the race with a k6 load test, then serialized all five booking write paths with PostgreSQL advisory locks keyed per branch and day, ordered to prevent deadlock."
+          "lead": "Eliminated double bookings under concurrent load:",
+          "rest": "reproduced the race with a k6 load test, then serialized all five booking write paths with PostgreSQL advisory locks keyed per branch and day."
         },
         {
-          "lead": "Integrated Stripe Connect, Billing and Terminal",
-          "rest": "(card readers, Tap to Pay on iPhone and Android) with replay-safe webhooks: exactly-once guards inside each money helper, backed by partial unique indexes."
+          "lead": "Made Stripe payments safe to retry:",
+          "rest": "Connect, Billing and Terminal (card readers, Tap to Pay on iPhone and Android) with replay-safe webhooks and exactly-once guards, so a duplicate event cannot charge twice."
         },
         {
           "lead": "Cut the booking-flow read from nine sequential queries to one",
-          "rest": "on warm hits (about 0.8 s cold before) with request-scoped memoization and a commit-invalidated TTL cache; query-budget tests fail the build on regressions."
+          "rest": "(about 0.8 s cold before) with request-scoped memoization and a commit-invalidated cache; query-budget tests fail the build if the count grows."
         },
         {
-          "lead": "Enforced tenant isolation mechanically:",
-          "rest": "an AST-based audit fails the test suite on any unguarded route, and a 181-code error contract generates the frontend constants; JWT with revocation, TOTP, passkeys and RBAC."
+          "lead": "Made tenant isolation impossible to skip:",
+          "rest": "an AST audit fails the test suite on any unguarded route, so a cross-tenant read cannot reach production; JWT with revocation, TOTP, passkeys and RBAC."
         },
         {
-          "lead": "Wrote 22 custom build guards",
-          "rest": "that fail the build on secrets in logs, schema/migration drift, error-contract violations and stale documentation, so standards are enforced by tooling rather than review."
+          "lead": "Replaced review-time policing with 22 custom build guards",
+          "rest": "that fail the build on secrets in logs, schema/migration drift, error-contract violations and stale documentation, so a standard cannot be broken silently."
         },
         {
-          "lead": "Built the test infrastructure for 8,500+ automated tests:",
-          "rest": "pytest against real PostgreSQL with an isolated database per run, Vitest, and Playwright at desktop, phone and iOS-WebKit sizes with axe accessibility checks."
+          "lead": "Built the test infrastructure behind 8,500+ automated tests",
+          "rest": "(pytest on real PostgreSQL with an isolated database per run, Vitest, Playwright at desktop, phone and iOS-WebKit sizes with axe checks), so every release ships from green."
         },
         {
-          "lead": "Operate production alone:",
-          "rest": "blocking pre-deploy migrations with expand/contract, a full staging mirror, nightly off-platform backups with a verified restore, Sentry keyed by commit, and a broker-free reminder worker."
+          "lead": "Run production alone:",
+          "rest": "blocking pre-deploy migrations, a full staging mirror, nightly off-platform backups with a verified restore, and Sentry keyed by commit, so every change is rehearsed on staging and every backup is known to restore."
         },
         {
-          "lead": "Unified notifications across email, SMS, WhatsApp and push",
-          "rest": "(ZeptoMail, Postmark, Twilio with 34 Meta-approved templates, APNs, FCM) behind one policy module and one executor that replaced eleven hand-rolled send loops."
+          "lead": "Collapsed eleven hand-rolled send loops into one notification module",
+          "rest": "covering email, SMS, WhatsApp (34 Meta-approved templates) and push (APNs, FCM), so every message goes through the same policy and executor."
         },
         {
-          "lead": "Shipped the iOS and Android apps",
-          "rest": "from the same React codebase through Capacitor, with native Tap to Pay (Apple entitlement approved), push notifications, passkeys and barcode scanning."
+          "lead": "Shipped the iOS and Android apps from the same React codebase",
+          "rest": "through Capacitor, with native Tap to Pay (Apple entitlement approved), push notifications, passkeys and barcode scanning, so one team of one maintains three clients."
         },
         {
-          "lead": "Ran several AI coding agents concurrently on one codebase and made it safe",
-          "rest": "with a 650-line engineering-standards document, 76 dated architecture decisions, a claim log, a pre-push hook and machine-checked invariants."
+          "lead": "Ran several AI coding agents concurrently on one codebase",
+          "rest": "and kept it safe by governing them with a 650-line standards document, 76 dated architecture decisions, a claim log, a pre-push hook and machine-checked invariants."
         }
       ]
     },
@@ -95,8 +95,8 @@
       "stack": "",
       "bullets": [
         {
-          "lead": "Designed, built and deployed the investor-facing website",
-          "rest": "with the founding team, from content structure and visual direction through domain configuration, turning complex biotech concepts into clear copy."
+          "lead": "Delivered the investor-facing website end to end",
+          "rest": "with the founding team, from content structure and visual direction through deployment and DNS, turning complex biotech concepts into clear copy."
         },
         {
           "lead": "Set up the company's technical operations,",
@@ -115,12 +115,12 @@
       "stack": "",
       "bullets": [
         {
-          "lead": "Promoted through four levels to Lead within a year;",
-          "rest": "led daily operations across public computer labs and the help desk (Active Directory, Bomgar, InfoBlox, Redmine), 29 hours a week alongside a full-time dual degree."
+          "lead": "Promoted through four levels to Lead within a year,",
+          "rest": "then ran daily operations across the public computer labs and help desk for a team of student technicians, 29 hours a week alongside a full-time dual degree."
         },
         {
           "lead": "Trained and onboarded new student technicians",
-          "rest": "and was the first point of contact for support tickets, triaging and resolving or escalating them."
+          "rest": "and was the first point of contact for support tickets, resolving or escalating each one."
         },
         {
           "lead": "Featured by UW–Madison Libraries",
@@ -142,19 +142,19 @@
       "bullets": [
         {
           "lead": "Built a ride-sharing backend as five Go microservices on Kubernetes,",
-          "rest": "using gRPC where the caller needs an answer, RabbitMQ topic exchanges for events and commands, and WebSockets for live rider and driver updates."
+          "rest": "using gRPC where the caller needs an answer, RabbitMQ where it only needs to announce an event, and WebSockets for live rider and driver updates."
         },
         {
-          "lead": "Designed a real-time driver-location pipeline:",
-          "rest": "Kafka partitioned by driver ID into an idempotent consumer that maintains a Redis geo index, making nearest-driver matching one GEOSEARCH and the driver service stateless."
+          "lead": "Made the driver service stateless",
+          "rest": "by streaming positions through Kafka (keyed by driver ID) into an idempotent consumer that keeps a Redis geo index, so nearest-driver matching is one GEOSEARCH on any replica."
         },
         {
-          "lead": "Made message handling crash-safe",
-          "rest": "with durable queues, manual acks, backoff retries, dead-lettering and idempotent handlers, proven by a chaos test that kills a pod mid-ride and asserts redelivery and no double-processing."
+          "lead": "Proved crash-safety instead of claiming it:",
+          "rest": "durable queues, acks after the work, backoff retries, dead-lettering and idempotent handlers, verified by a chaos test that kills a pod mid-ride and asserts no double-processing."
         },
         {
-          "lead": "Instrumented every service",
-          "rest": "with Prometheus metrics and a provisioned Grafana dashboard, and propagated OpenTelemetry traces across gRPC and RabbitMQ hops so one trace follows a ride end to end."
+          "lead": "Made every ride traceable end to end:",
+          "rest": "Prometheus metrics and a provisioned Grafana dashboard on every service, with OpenTelemetry context carried through gRPC metadata and RabbitMQ headers."
         },
         {
           "lead": "Built a live operations map",
@@ -193,12 +193,12 @@
       "stack": "Python, gRPC, Kafka, Cassandra, Spark, HDFS, BigQuery, Docker",
       "bullets": [
         {
-          "lead": "Built a replicated gRPC lookup service",
-          "rest": "with LRU-cached HTTP front-ends that survives a container failure, and a SQL to HDFS Parquet pipeline (WebHDFS, PyArrow) that keeps serving through DataNode loss."
+          "lead": "Built a replicated gRPC lookup service that survives a container failure,",
+          "rest": "with LRU-cached HTTP front-ends, and a SQL to HDFS Parquet pipeline (WebHDFS, PyArrow) that keeps serving through DataNode loss."
         },
         {
-          "lead": "Streamed MySQL rows through Kafka",
-          "rest": "to partition-assigned consumers writing Parquet to HDFS with exactly-once semantics, and wrote a Cassandra gRPC weather server tuned for write availability."
+          "lead": "Streamed MySQL rows through Kafka to HDFS with exactly-once semantics",
+          "rest": "using partition-assigned consumers writing Parquet, and wrote a Cassandra gRPC weather server tuned for write availability."
         },
         {
           "lead": "Analyzed data with Spark",
