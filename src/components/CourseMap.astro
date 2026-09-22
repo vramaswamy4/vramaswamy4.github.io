@@ -1,0 +1,142 @@
+---
+// Course map: one column per semester, one band per track, edges for prerequisites.
+import { courses, edges, terms, termShort, tracks } from '../data/courses';
+
+const gutter = 128, top = 46, colW = 156, nodeW = 136, nodeH = 54, rowH = 78, pad = 14;
+const width = gutter + terms.length * colW + 12;
+const rowOffset = new Map<string, number>();
+let acc = 0;
+for (const t of tracks) { rowOffset.set(t.id, acc); acc += t.rows; }
+const height = top + acc * rowH + 16;
+
+const byCode = new Map(courses.map((c) => [c.code, c]));
+const pos = (c: (typeof courses)[number]) => ({
+  x: gutter + terms.indexOf(c.term) * colW + (colW - nodeW) / 2,
+  y: top + (rowOffset.get(c.track)! + (c.row ?? 0)) * rowH + (rowH - nodeH) / 2,
+});
+const tone = Object.fromEntries(tracks.map((t) => [t.id, t.tone]));
+const paths = edges.map((e) => {
+  const a = pos(byCode.get(e.from)!), b = pos(byCode.get(e.to)!);
+  const x1 = a.x + nodeW, y1 = a.y + nodeH / 2, x2 = b.x, y2 = b.y + nodeH / 2;
+  const k = Math.max(22, (x2 - x1) * 0.5);
+  return { ...e, d: `M${x1},${y1} C${x1 + k},${y1} ${x2 - k},${y2} ${x2},${y2}`, tone: tone[byCode.get(e.to)!.track] };
+});
+---
+
+<figure class="map" data-reveal>
+  <div class="scroll">
+    <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Map of courses by semester and track, with prerequisite arrows" style={`min-width:${Math.round(width * 0.78)}px;aspect-ratio:${width}/${height}`}>
+      <defs>
+        {['teal', 'amber', 'violet', 'blue', 'rose', 'muted'].map((t) => (
+          <marker id={`carr-${t}`} viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M1,1.5 L8.5,5 L1,8.5" fill="none" class={`tone-${t}`} stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </marker>
+        ))}
+      </defs>
+
+      {tracks.map((t, i) => (
+        <g class={`band tone-${t.tone}`}>
+          <rect x="0" y={top + rowOffset.get(t.id)! * rowH} width={width} height={t.rows * rowH} class:list={['bg', { alt: i % 2 === 1 }]} />
+          <rect x="0" y={top + rowOffset.get(t.id)! * rowH + 10} width="3" height={t.rows * rowH - 20} rx="1.5" class="bar" />
+          <text x={pad} y={top + rowOffset.get(t.id)! * rowH + (t.rows * rowH) / 2} dominant-baseline="middle" class="tlabel">{t.label}</text>
+        </g>
+      ))}
+
+      {terms.map((t, i) => (
+        <g class="col">
+          <line x1={gutter + i * colW} y1={top - 6} x2={gutter + i * colW} y2={height - 6} />
+          <text x={gutter + i * colW + colW / 2} y={top - 18} text-anchor="middle">{termShort[t]}</text>
+        </g>
+      ))}
+
+      {paths.map((p) => (
+        <g class={`edge tone-${p.tone}`}>
+          <path d={p.d} class="line" stroke-dasharray={p.dashed ? '4 6' : undefined} marker-end={`url(#carr-${p.tone})`} />
+          {!p.dashed && <path d={p.d} class="flow" />}
+        </g>
+      ))}
+
+      {courses.map((c) => {
+        const { x, y } = pos(c);
+        return (
+          <a href={`#${c.code.toLowerCase().replace(/\s+/g, '-')}`} class={`node tone-${tone[c.track]}`}>
+            <g transform={`translate(${x},${y})`}>
+              <rect width={nodeW} height={nodeH} rx="11" />
+              <text class="code" x="11" y="17">{c.code}{c.honors ? ' ★' : ''}</text>
+              <text class="short" x="11" y="38">{c.short}</text>
+              <g class={`grade g-${c.grade}`} transform={`translate(${nodeW - 34},7)`}>
+                <rect width="26" height="16" rx="8" />
+                <text x="13" y="8.5" text-anchor="middle" dominant-baseline="middle">{c.grade}</text>
+              </g>
+            </g>
+          </a>
+        );
+      })}
+    </svg>
+  </div>
+  <p class="hint" aria-hidden="true">Scroll sideways for the full map →</p>
+  <figcaption>
+    <span><i class="solid"></i>Prerequisite</span>
+    <span><i class="dashed"></i>Builds on</span>
+    <span><b class="pill">A</b> grade from the transcript</span>
+    <span>★ accelerated honors section</span>
+    <span>T = transfer credit</span>
+  </figcaption>
+</figure>
+
+<style>
+  .map {
+    --blue: #5aa9ff;
+    --rose: #ff7ab6;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background:
+      radial-gradient(700px 300px at 80% 0%, color-mix(in srgb, var(--teal) 6%, transparent), transparent 70%),
+      var(--bg-raise);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  :global(:root[data-theme='light']) .map { --blue: #1d6fd1; --rose: #c2367b; }
+  @media (prefers-color-scheme: light) { :global(:root:not([data-theme='dark'])) .map { --blue: #1d6fd1; --rose: #c2367b; } }
+  .scroll { overflow-x: auto; padding: clamp(10px, 2vw, 22px); }
+  svg { width: 100%; height: auto; display: block; font-family: var(--font-body); }
+
+  .tone-teal { --c: var(--teal); }
+  .tone-amber { --c: var(--amber); }
+  .tone-violet { --c: var(--violet); }
+  .tone-blue { --c: var(--blue); }
+  .tone-rose { --c: var(--rose); }
+  .tone-muted { --c: var(--muted); }
+  marker path { stroke: var(--c); }
+
+  .band .bg { fill: transparent; }
+  .band .bg.alt { fill: color-mix(in srgb, var(--surface-2) 40%, transparent); }
+  .band .bar { fill: var(--c); opacity: 0.9; }
+  .band .tlabel { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; fill: var(--c); }
+
+  .col line { stroke: var(--border); stroke-dasharray: 2 6; }
+  .col text { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; fill: var(--muted); }
+
+  .edge .line { fill: none; stroke: var(--c); stroke-width: 1.4; opacity: 0.5; }
+  .edge .flow { fill: none; stroke: var(--c); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 1 22; animation: flow 1.6s linear infinite; opacity: 0.9; }
+  @keyframes flow { to { stroke-dashoffset: -23; } }
+  @media (prefers-reduced-motion: reduce) { .edge .flow { animation: none; display: none; } }
+
+  .node rect:first-child { fill: var(--surface); stroke: color-mix(in srgb, var(--c) 55%, var(--border-strong)); stroke-width: 1.2; transition: stroke 0.15s ease, fill 0.15s ease; }
+  .node:hover rect:first-child { fill: color-mix(in srgb, var(--c) 10%, var(--surface)); stroke: var(--c); }
+  .node .code { font-family: var(--font-mono); font-size: 10.5px; fill: var(--c); letter-spacing: 0.04em; }
+  .node .short { font-size: 12.5px; font-weight: 600; fill: var(--text); }
+  .node .grade rect { fill: color-mix(in srgb, var(--teal) 18%, transparent); }
+  .node .grade.g-AB rect { fill: color-mix(in srgb, var(--amber) 18%, transparent); }
+  .node .grade.g-T rect { fill: color-mix(in srgb, var(--muted) 20%, transparent); }
+  .node .grade text { font-family: var(--font-mono); font-size: 10px; font-weight: 600; fill: var(--text); }
+
+  .hint { display: none; margin: 0 22px 12px; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+  @media (max-width: 900px) { .hint { display: block; } }
+  figcaption { display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 12px 22px 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+  figcaption span { display: inline-flex; align-items: center; gap: 8px; }
+  figcaption i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--text-2); }
+  figcaption i.dashed { border-top-style: dashed; }
+  figcaption .pill { display: inline-block; padding: 0 7px; border-radius: 99px; background: color-mix(in srgb, var(--teal) 18%, transparent); font-family: var(--font-mono); font-size: 10.5px; color: var(--text); }
+</style>

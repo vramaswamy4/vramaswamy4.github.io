@@ -62,6 +62,7 @@ const { experience, projects } = cv;
             <li>Certificate in Entrepreneurship</li>
           </ul>
           <div class="chips">{coursework.map((c) => <span class="chip">{c}</span>)}</div>
+          <a class="more" href="/coursework/">Every course, with grades and what each one taught me <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </div>
@@ -175,6 +176,9 @@ const { experience, projects } = cv;
   .uni { color: var(--text-2); margin: 0; }
   .honors { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 8px; }
   .honors li { display: flex; align-items: center; gap: 12px; font-weight: 550; }
+  .more { margin-top: 6px; font-size: 14.5px; color: var(--text-2); }
+  .more:hover { color: var(--teal); }
+  .more span { color: var(--teal); }
   .honors li::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 20%, transparent); }
 
   .roles { list-style: none; margin: 0; padding: 0; }

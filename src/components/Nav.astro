@@ -6,6 +6,7 @@ const path = Astro.url.pathname;
 const links = [
   { href: '/#work', label: 'Work', active: path.startsWith('/projects') },
   { href: '/about/', label: 'About', active: path.startsWith('/about') },
+  { href: '/coursework/', label: 'Coursework', active: path.startsWith('/coursework') },
   ...(posts.length ? [{ href: '/writing/', label: 'Writing', active: path.startsWith('/writing') }] : []),
 ];
 ---
