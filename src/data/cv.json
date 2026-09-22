@@ -76,7 +76,7 @@
         },
         {
           "lead": "Shipped the iOS and Android apps from the same React codebase",
-          "rest": "through Capacitor, with native Tap to Pay (Apple entitlement approved), push notifications, passkeys and barcode scanning, so one team of one maintains three clients."
+          "rest": "through Capacitor, with native Tap to Pay, push notifications, passkeys and barcode scanning, so one person maintains three clients."
         },
         {
           "lead": "Ran several AI coding agents concurrently on one codebase",
@@ -96,7 +96,7 @@
       "bullets": [
         {
           "lead": "Delivered the investor-facing website end to end",
-          "rest": "with the founding team, from content structure and visual direction through deployment and DNS, turning complex biotech concepts into clear copy."
+          "rest": "with the founding team, from content structure through deployment and DNS."
         },
         {
           "lead": "Set up the company's technical operations,",
@@ -116,7 +116,7 @@
       "bullets": [
         {
           "lead": "Promoted through four levels to Lead within a year,",
-          "rest": "then ran daily operations across the public computer labs and help desk for a team of student technicians, 29 hours a week alongside a full-time dual degree."
+          "rest": "then ran the public labs and help desk for a team of student technicians, 29 hours a week alongside a full-time dual degree."
         },
         {
           "lead": "Trained and onboarded new student technicians",
@@ -159,26 +159,6 @@
         {
           "lead": "Built a live operations map",
           "rest": "(MapLibre GL, deck.gl) with streaming driver positions, an H3 demand heatmap and trip replay by seeking the Kafka log by timestamp, fed by a fleet simulator on OSRM routes."
-        }
-      ]
-    },
-    {
-      "id": "engine",
-      "title": "JustBook availability engine",
-      "subtitle": "Production scheduling code, published to be read and run",
-      "org": "",
-      "note": "",
-      "when": "2026",
-      "href": "https://github.com/vramaswamy4/justbook-availability-engine",
-      "stack": "Python, SQLAlchemy, PostgreSQL, pytest",
-      "bullets": [
-        {
-          "lead": "Published the production scheduling engine on GitHub",
-          "rest": "with 63 tests and a runnable example, covering branch time zones, DST transitions, half-open intervals, fixed slot grids, buffers, holds and multi-stylist selection."
-        },
-        {
-          "lead": "Held the month view to five queries regardless of business size",
-          "rest": "by loading conflicts once into per-stylist indexes and simulating the day generator in memory."
         }
       ]
     },
