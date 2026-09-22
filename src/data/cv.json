@@ -131,13 +131,13 @@
   ],
   "projects": [
     {
-      "id": "ride-dispatch",
-      "title": "ride-dispatch",
+      "id": "Flagdown",
+      "title": "Flagdown",
       "subtitle": "Ride-sharing backend in Go microservices",
       "org": "",
       "note": "",
       "when": "2026",
-      "href": "/projects/ride-dispatch/",
+      "href": "/projects/flagdown/",
       "stack": "Go, gRPC, RabbitMQ, Kafka, Redis, MongoDB, Kubernetes, Prometheus, Grafana, OpenTelemetry, Next.js",
       "bullets": [
         {

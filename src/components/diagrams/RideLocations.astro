@@ -23,7 +23,7 @@ const edges: DEdge[] = [
 ---
 
 <ArchDiagram
-  title="ride-dispatch location pipeline: driver positions go through the gateway into a Kafka topic keyed by driver ID. A consumer maintains a Redis geo index that the driver service queries for the nearest driver, while the gateway fans the same stream out to the ops map and replays it by timestamp."
+  title="Flagdown location pipeline: driver positions go through the gateway into a Kafka topic keyed by driver ID. A consumer maintains a Redis geo index that the driver service queries for the nearest driver, while the gateway fans the same stream out to the ops map and replays it by timestamp."
   width={1000}
   height={350}
   nodes={nodes}

@@ -1,5 +1,5 @@
 ---
-// `tag` overrides the default label for a step's kind (the defaults were written for ride-dispatch).
+// `tag` overrides the default label for a step's kind (the defaults were written for Flagdown).
 interface Step { kind: 'sync' | 'async' | 'user'; who: string; text: string; tag?: string }
 interface Props { steps: Step[] }
 const { steps } = Astro.props;

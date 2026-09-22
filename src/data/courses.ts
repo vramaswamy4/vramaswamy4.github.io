@@ -56,7 +56,7 @@ export const courses: Course[] = [
   { code: 'CS 544', title: 'Introduction to Big Data Systems', short: 'Big Data Systems', term: 'Fall 2025', credits: 3, grade: 'A', track: 'systems',
     about: 'Deploying and using distributed systems to store and analyse large datasets: structured and unstructured storage, new query languages, streaming data, and training machine learning models on distributed platforms. Eight graded systems projects.',
     skills: ['HDFS and Parquet', 'Kafka streaming', 'Spark (RDD, DataFrame, SQL, ML)', 'Cassandra', 'BigQuery and Dataform', 'gRPC services', 'Docker', 'Measuring resource usage and cost'],
-    used: [{ label: 'Big Data Systems projects', href: '/about/#projects' }, { label: 'ride-dispatch: Kafka driver-location pipeline', href: '/projects/ride-dispatch/' }] },
+    used: [{ label: 'Big Data Systems projects', href: '/about/#projects' }, { label: 'Flagdown: Kafka driver-location pipeline', href: '/projects/flagdown/' }] },
   { code: 'CS 564', title: 'Database Management Systems: Design and Implementation', short: 'Database Systems', term: 'Spring 2026', credits: 4, grade: 'A', track: 'systems',
     about: 'What a DBMS is and how it is built: the relational model and ER design, SQL for complex queries, file organisation and indexing, query processing and optimisation, transactions, concurrency control, rollback and recovery.',
     skills: ['Relational modelling and SQL', 'Indexing and storage', 'Query optimisation', 'Transactions and concurrency control', 'Crash recovery'],
