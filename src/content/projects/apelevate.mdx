@@ -1,12 +1,12 @@
 ---
 title: APElevate
 tagline: "An AP-exam tutoring marketplace I built in high school, recovered in 2026 and rebuilt: same product, with tests, verified payments and a new interface."
-summary: "Students buy tokens and enrol in mentor-led Zoom classes; mentors apply, get reviewed and schedule classes. First built in Django in 2022–23 in Dubai. In 2026 I audited it, fixed every flow, added 210 tests, a token ledger and server-verified payments, redesigned it, and deployed it to Cloud Run with Terraform."
+summary: "Students buy tokens and enrol in mentor-led Zoom classes; mentors apply, get reviewed and schedule classes. First built in Django in 2022–23 in Dubai. In 2026 I audited it, fixed every flow, added 217 tests, a token ledger, server-verified payments and an evaluated LLM study planner on an open-weights model, redesigned it, and deployed it to Cloud Run with Terraform."
 order: 3
 role: Design and build, solo
 period: '2022–23, rebuilt 2026'
 status: Live demo
-stack: [Python, Django 5.2, PostgreSQL, htmx, pytest, Docker, Terraform, Google Cloud Run, Neon, GitHub Actions]
+stack: [Python, Django 5.2, PostgreSQL, LLM evals, gpt-oss, htmx, pytest, Terraform, Google Cloud Run, Docker, Neon, GitHub Actions]
 links:
   - { label: Live demo, href: 'https://apelevate-1065774348021.us-west1.run.app' }
   - { label: Source on GitHub, href: 'https://github.com/vramaswamy4/apelevate' }
@@ -22,9 +22,11 @@ import after from '../../assets/projects/apelevate-classes-crop.png';
 import classPage from '../../assets/projects/apelevate-class.png';
 import analytics from '../../assets/projects/apelevate-analytics.png';
 import review from '../../assets/projects/apelevate-review.png';
+import studyPlan from '../../assets/projects/apelevate-study-plan.png';
 
-{/* TODO(phase 5): when the chosen extensions ship, update this page:
-    - tagline/summary/stack: add the new capability (e.g. the LLM study planner, the public API)
+{/* TODO: the LLM study planner shipped 2026-09-23 and is written up below. When further
+    extensions ship (e.g. remote Terraform state + plan in CI), update this page:
+    - tagline/summary/stack: add the new capability
     - add a section per extension with how it works, the decision behind it, and a screenshot
     - refresh the Stats numbers (tests, coverage) from `pytest --collect-only` and `make cov`
     - update "What's next" at the bottom so it only lists what's still undone */}
@@ -36,9 +38,9 @@ A marketplace for AP-exam tutoring. Students buy tokens and spend one to enrol i
 I wrote the first version in Dubai during high school, between July 2022 and February 2023: one Django app, server-rendered templates, SQLite, hosted on PythonAnywhere. In September 2026 I recovered it from a zip of the old repository, and rebuilt it. The [live demo](https://apelevate-1065774348021.us-west1.run.app) has one-click sign-in as a student, a mentor, a staff reviewer or an applicant; payments are simulated and everything resets nightly.
 
 <Stats items={[
-  { value: '210', label: 'tests, run on SQLite and PostgreSQL in CI' },
-  { value: '90%', label: 'line coverage' },
-  { value: '0', label: 'tests in the 2022 version' },
+  { value: '217', label: 'tests, run on SQLite and PostgreSQL in CI' },
+  { value: '95%', label: 'line coverage' },
+  { value: '24/24', label: 'valid study plans from gpt-oss-120b in the eval suite' },
 ]} />
 
 <BeforeAfter
@@ -82,6 +84,18 @@ Neither main flow worked end to end. The recovered repository also explained why
 
 <Shot src={review} alt="Staff reviewing a mentor application: the applicant's answers, document downloads, and accept or reject with a note" url="/accounts/review/…" caption="Staff review. Accepting creates the mentor profile, exactly once, under a row lock; the applicant is emailed either way." />
 
+## The study planner
+
+The one feature the 2022 version never had. A student picks a subject, an exam date, their weekly hours and the units they find hardest, and gets a week-by-week plan up to the exam: topics, concrete tasks, and the live classes that fit each week. An open-weights model (`gpt-oss-120b`, on Groq's free tier) writes it; code checks it before anyone sees it.
+
+<Shot src={studyPlan} alt="A 10-week AP Chemistry study plan: weak units first, topic chips, concrete tasks, a linked live class, and a panel showing the checks passed, the model, tokens and time" url="/plan/…" caption="A plan from the live demo. The side panel shows what the code checked and what the call cost." />
+
+**Code computes, the model judges.** Weeks, start dates, which week each class falls in, and the only topic codes and class ids that exist are worked out first and handed to the model as data. It returns JSON against a strict schema, and every topic, class, week and hour is checked. A rule break gets one corrective retry with the errors listed; if the plan is still wrong, the student gets an error, never an invented topic. Only form choices reach the model, so there's no free text to inject a prompt through.
+
+**Evals decide, not impressions.** 24 fixed cases (every subject, one-week sprints, 16-week caps, one hour a week and twenty, no classes and a class almost every week) run through the same code path as the page. Responses are recorded, so anyone can re-score them without a key. Two results changed the product: the first prompt's results exposed two rules that contradicted each other, and fixing them took clean plans from 62% to 88%. The faster `gpt-oss-20b` lost to `gpt-oss-120b` on validity, 71% against 100%. Along the way the evals caught two provider behaviours the docs don't make obvious: Groq's "strict" schema mode rejects bad output after generation rather than preventing it, and a default output limit was silently truncating another model's answers.
+
+**Model-agnostic and free.** The client is plain HTTP to any OpenAI-compatible API, so switching model or host is configuration, and a fake model runs the whole feature offline in tests. A per-user limit, a global daily token budget under the free quota, and a cache keep the demo at $0.
+
 ## Running it
 
 `make dev` goes from a fresh clone to a running app with demo data on SQLite. `make up` runs it on PostgreSQL in Docker, which CI also boots and checks over HTTP.
@@ -94,6 +108,7 @@ Reading my own old code was more useful than I expected. Almost every problem in
 
 ## What's next
 
+- Move the Terraform state to a versioned Cloud Storage bucket and run `terraform plan` in CI.
 - Test the PayPal integration against the PayPal sandbox with real credentials, and add webhooks so an abandoned checkout completes without the reconcile job.
 - Cancellations, refunds and class capacity.
 - Move email to a background worker.
