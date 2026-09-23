@@ -6,6 +6,7 @@
     "email": "vinithramaswamy@gmail.com",
     "phone": "(608) 949-4944",
     "work_auth": "U.S. permanent resident (no sponsorship needed)",
+    "skills_url": "vramaswamy4.github.io/about/#skills",
     "links": [
       "vramaswamy4.github.io",
       "linkedin.com/in/vinithramaswamy",
@@ -36,8 +37,8 @@
       "stack": "Python, Flask, SQLAlchemy, PostgreSQL, React 19, Capacitor, Stripe, Twilio, Render, AWS S3, pytest, Playwright",
       "bullets": [
         {
-          "lead": "Took a booking and payments platform from idea to production alone in 15 months,",
-          "rest": "live on web, iOS and Android: a Flask/PostgreSQL API (633 endpoints, 127 models), a React 19 front end and Capacitor mobile apps."
+          "lead": "Took a booking and payments platform from idea to production in 15 months:",
+          "rest": "a Flask/PostgreSQL API (633 endpoints, 127 models), a React 19 front end and Capacitor mobile apps, now live on web, iOS and Android."
         },
         {
           "lead": "Designed one availability engine for every booking surface",
@@ -68,7 +69,7 @@
           "rest": "(pytest on real PostgreSQL with an isolated database per run, Vitest, Playwright at desktop, phone and iOS-WebKit sizes with axe checks), so every release ships from green."
         },
         {
-          "lead": "Run production alone:",
+          "lead": "Run production:",
           "rest": "blocking pre-deploy migrations, a full staging mirror, nightly off-platform backups with a verified restore, and Sentry keyed by commit, so every change is rehearsed on staging and every backup is known to restore."
         },
         {
@@ -77,7 +78,7 @@
         },
         {
           "lead": "Shipped the iOS and Android apps from the same React codebase",
-          "rest": "through Capacitor, with native Tap to Pay, push notifications, passkeys and barcode scanning, so one person maintains three clients."
+          "rest": "through Capacitor, with native Tap to Pay, push notifications, passkeys and barcode scanning, so one codebase serves three clients."
         },
         {
           "lead": "Ran several AI coding agents concurrently on one codebase",
@@ -150,7 +151,7 @@
           "rest": "by streaming positions through Kafka (keyed by driver ID) into an idempotent consumer that keeps a Redis geo index, so nearest-driver matching is one GEOSEARCH on any replica."
         },
         {
-          "lead": "Proved crash-safety instead of claiming it:",
+          "lead": "Made message handling crash-safe:",
           "rest": "durable queues, acks after the work, backoff retries, dead-lettering and idempotent handlers, verified by a chaos test that kills a pod mid-ride and asserts no double-processing."
         },
         {
@@ -195,7 +196,7 @@
         },
         {
           "lead": "Put the whole GCP deployment in Terraform with remote versioned state",
-          "rest": "and a read-only weekly terraform plan in CI through Workload Identity Federation that fails on drift and posts the plan; applies stay manual by design."
+          "rest": "and a read-only weekly terraform plan in CI, under the same keyless GitHub Actions identity, that fails on drift and posts the plan; applies stay manual by design."
         },
         {
           "lead": "Deployed to Google Cloud Run with Neon Postgres, all in Terraform,",
