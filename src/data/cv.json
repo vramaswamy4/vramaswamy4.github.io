@@ -175,7 +175,7 @@
       "bullets": [
         {
           "lead": "Recovered my 2022 high-school Django app and rebuilt it on Django 5.2:",
-          "rest": "five apps and 176 tests at 95% coverage in CI on SQLite and PostgreSQL, from 770 lines with no tests and 65 audited defects, so both main flows work end to end for the first time."
+          "rest": "five apps and 210 tests at 90% coverage in CI on SQLite and PostgreSQL, from 770 lines with no tests and 65 audited defects, so both main flows work end to end for the first time."
         },
         {
           "lead": "Made the token ledger impossible to corrupt from application code:",
