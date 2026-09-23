@@ -7,6 +7,7 @@ import MatchVisual from '../components/MatchVisual.astro';
 import SkillGrid from '../components/SkillGrid.astro';
 import StackChips from '../components/StackChips.astro';
 import justbookShot from '../assets/projects/justbook-home.png';
+import apelevateShot from '../assets/projects/apelevate-home-dark.png';
 import avatar from '../assets/me/avatar.jpg';
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -75,6 +76,10 @@ const experience = [
               {p.id === 'justbook' ? (
                 <div class="shot">
                   <Image src={justbookShot} alt="The JustBook marketing site showing a business's branded booking page on a phone" widths={[640, 1100, 1600]} sizes="(max-width: 900px) 100vw, 640px" />
+                </div>
+              ) : p.id === 'apelevate' ? (
+                <div class="shot">
+                  <Image src={apelevateShot} alt="The APElevate home page: AP exam classes taught by students who aced the exam" widths={[640, 1100, 1600]} sizes="(max-width: 900px) 100vw, 640px" />
                 </div>
               ) : (
                 <MatchVisual />

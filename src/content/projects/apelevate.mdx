@@ -16,8 +16,9 @@ accent: violet
 
 import Stats from '../../components/Stats.astro';
 import Shot from '../../components/Shot.astro';
+import BeforeAfter from '../../components/BeforeAfter.astro';
 import before from '../../assets/projects/apelevate-2022-classes.png';
-import after from '../../assets/projects/apelevate-classes.png';
+import after from '../../assets/projects/apelevate-classes-crop.png';
 import classPage from '../../assets/projects/apelevate-class.png';
 import analytics from '../../assets/projects/apelevate-analytics.png';
 import review from '../../assets/projects/apelevate-review.png';
@@ -40,9 +41,16 @@ I wrote the first version in Dubai during high school, between July 2022 and Feb
   { value: '0', label: 'tests in the 2022 version' },
 ]} />
 
-<Shot src={before} alt="The 2022 APElevate class list: Bootstrap cards on a purple navigation bar with hardcoded filter dropdowns" url="2022 · the original code, rendered as-is" caption="2022. The filter dropdowns were hardcoded, and a new class didn't appear here until another student had already joined it." />
-
-<Shot src={after} alt="The 2026 APElevate class list: class cards with subject badges, topic chips, times and mentor names, with working subject and mentor filters" url="2026 · /classes" caption="2026. Every upcoming class, filtered by subject or mentor without a page reload." />
+<BeforeAfter
+  before={before}
+  after={after}
+  beforeLabel="2022 original"
+  afterLabel="2026 rebuild"
+  beforeAlt="The 2022 APElevate class list: Bootstrap cards on a purple navigation bar, with hardcoded filter dropdowns"
+  afterAlt="The 2026 APElevate class list: class cards with subject badges, topic chips, times and mentor names, and working subject and mentor filters"
+  url="/classes · the same page, 2022 vs 2026"
+  caption="Drag the handle. Left is the 2022 code, rendered as-is on its original stack (no screenshots from the time survive). Right is the 2026 rebuild. In 2022 the filters were hardcoded, and a new class didn't appear here until another student had already joined it."
+/>
 
 ## Auditing the 2022 code
 
