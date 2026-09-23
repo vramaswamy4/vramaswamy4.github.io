@@ -1,0 +1,91 @@
+---
+title: APElevate
+tagline: "An AP-exam tutoring marketplace I built in high school, recovered in 2026 and rebuilt: same product, with tests, verified payments and a new interface."
+summary: "Students buy tokens and enrol in mentor-led Zoom classes; mentors apply, get reviewed and schedule classes. First built in Django in 2022–23 in Dubai. In 2026 I audited it, fixed every flow, added 176 tests, a token ledger and server-verified payments, redesigned it, and deployed it to Cloud Run with Terraform."
+order: 3
+role: Design and build, solo
+period: '2022–23, rebuilt 2026'
+status: Live demo
+stack: [Python, Django 5.2, PostgreSQL, htmx, pytest, Docker, Terraform, Google Cloud Run, Neon, GitHub Actions]
+links:
+  - { label: Live demo, href: 'https://apelevate-1065774348021.us-west1.run.app' }
+  - { label: Source on GitHub, href: 'https://github.com/vramaswamy4/apelevate' }
+  - { label: The 2022 audit, href: 'https://github.com/vramaswamy4/apelevate/blob/main/docs/ORIGINAL.md' }
+accent: violet
+---
+
+import Stats from '../../components/Stats.astro';
+import Shot from '../../components/Shot.astro';
+import before from '../../assets/projects/apelevate-2022-classes.png';
+import after from '../../assets/projects/apelevate-classes.png';
+import classPage from '../../assets/projects/apelevate-class.png';
+import analytics from '../../assets/projects/apelevate-analytics.png';
+import review from '../../assets/projects/apelevate-review.png';
+
+{/* TODO(phase 5): when the chosen extensions ship, update this page:
+    - tagline/summary/stack: add the new capability (e.g. the LLM study planner, the public API)
+    - add a section per extension with how it works, the decision behind it, and a screenshot
+    - refresh the Stats numbers (tests, coverage) from `pytest --collect-only` and `make cov`
+    - update "What's next" at the bottom so it only lists what's still undone */}
+
+## What it is
+
+A marketplace for AP-exam tutoring. Students buy tokens and spend one to enrol in a live, small-group class on Zoom. Mentors are students who scored well on an AP exam: they apply with a score report and a CV, staff review the application, and approved mentors schedule classes tagged with the College Board units and topics they cover.
+
+I wrote the first version in Dubai during high school, between July 2022 and February 2023: one Django app, server-rendered templates, SQLite, hosted on PythonAnywhere. In September 2026 I recovered it from a zip of the old repository, and rebuilt it. The [live demo](https://apelevate-1065774348021.us-west1.run.app) has one-click sign-in as a student, a mentor, a staff reviewer or an applicant; payments are simulated and everything resets nightly.
+
+<Stats items={[
+  { value: '176', label: 'tests, run on SQLite and PostgreSQL in CI' },
+  { value: '95%', label: 'line coverage' },
+  { value: '0', label: 'tests in the 2022 version' },
+]} />
+
+<Shot src={before} alt="The 2022 APElevate class list: Bootstrap cards on a purple navigation bar with hardcoded filter dropdowns" url="2022 · the original code, rendered as-is" caption="2022. The filter dropdowns were hardcoded, and a new class didn't appear here until another student had already joined it." />
+
+<Shot src={after} alt="The 2026 APElevate class list: class cards with subject badges, topic chips, times and mentor names, with working subject and mentor filters" url="2026 · /classes" caption="2026. Every upcoming class, filtered by subject or mentor without a page reload." />
+
+## Auditing the 2022 code
+
+Before changing anything I read every file and ran the original on its original stack against a fresh database. The [audit](https://github.com/vramaswamy4/apelevate/blob/main/docs/ORIGINAL.md) numbers each problem. The ones that mattered:
+
+- `migrate` crashed on an empty database, because a form queried the database at import time.
+- Visiting `/payment-complete/180` added 20 tokens. The browser told the server a payment had succeeded, and the server believed it.
+- Enrolling was free and showed the Zoom password whatever your balance.
+- Mentor applications were saved without the applicant, so accepting one always crashed. Classes were saved without their mentor, so no mentor saw their own classes.
+- The role check read only a user's first auth group, so a student promoted to mentor still couldn't open the mentor portal.
+
+Neither main flow worked end to end. The recovered repository also explained why deployment had been painful: the project sat one folder below the repository root, the requirements file had no extension and was saved as UTF-16, and the `Procfile` was empty.
+
+## What the rebuild changed
+
+**Rules in the database.** A student enrols in a class once, a balance never goes negative, each purchase credits tokens once, each enrolment spends one once, and a user has at most one pending application. Each rule is a unique index, a check constraint or a partial unique index, so two requests racing each other can't both win and a future code path that forgets a rule still can't break it. Token balances are a cached total of a ledger, and a management command checks that they agree.
+
+**Payments the server verifies.** The server creates the PayPal order from its own price table, captures it, and reads the amount, currency and reference back before crediting anything. Both calls carry an idempotency key, so retrying after a timeout can't charge twice. The same code path runs against a fake provider in development and tests.
+
+**Secure by default.** Every view needs a signed-in user unless it's explicitly public, a wrong role gets a real 403, and anything that changes state is a POST. Mentor CVs and score reports are type- and content-checked, stored privately with random names, and only reachable through a staff-only download view.
+
+<Shot src={classPage} alt="A class page after enrolling: class details, topics covered, and a panel showing the Zoom link, meeting ID and passcode" url="/classes/…" caption="After enrolling, the panel swaps in place (htmx) to show the Zoom details, and the token balance in the header drops by one." />
+
+**Tests that describe the behaviour.** Most tests are named after a 2022 failure and fail if it comes back. There's a permission matrix of every page against every role, payment tests against a fake PayPal API that underpays or reports pending captures, and query-budget tests that render each list page with 2 rows and with 10 and require the same number of queries. The original rendered 12 classes in 72 queries.
+
+**An owned design system.** The 2022 templates loaded two versions of Bootstrap, jQuery and Font Awesome and pasted one style block into seven files. Now it's one token-based stylesheet with light and dark themes, a shared form-field template for accessible labels and errors, and htmx only where a page reload was the wrong experience. The purple and the "AP" monogram are from the original logo.
+
+<Shot src={analytics} alt="The mentor analytics page: hours taught, students, enrolments and upcoming classes, a table by month, and bars by subject" url="/teach/analytics" caption="Mentor analytics were a five-line placeholder in 2022. They're computed from classes and enrolments now, so they can't drift." />
+
+<Shot src={review} alt="Staff reviewing a mentor application: the applicant's answers, document downloads, and accept or reject with a note" url="/accounts/review/…" caption="Staff review. Accepting creates the mentor profile, exactly once, under a row lock; the applicant is emailed either way." />
+
+## Running it
+
+`make dev` goes from a fresh clone to a running app with demo data on SQLite. `make up` runs it on PostgreSQL in Docker, which CI also boots and checks over HTTP.
+
+The demo runs on Google Cloud Run in Oregon, next to a Neon Postgres database in the same region, and scales to zero when nobody is using it. All of the infrastructure is Terraform: the service, a migration job, a nightly reset job on Cloud Scheduler, a private bucket for uploads, secrets, a budget alert, and Workload Identity Federation so GitHub Actions deploys without a stored key. After CI passes on `main`, the deploy workflow builds the image, runs migrations, rolls out the new revision and smoke-tests it.
+
+## What I learned
+
+Reading my own old code was more useful than I expected. Almost every problem in it is one I've since learned to prevent, mostly by building [JustBook](/projects/justbook/): write the rule down where the database enforces it, never trust the browser with money, make the secure path the default one, and test the flow a user actually takes before testing anything else. The 2022 version started from templates and never got to the rules. The rebuild started from the audit and the ledger, and built the pages on top.
+
+## What's next
+
+- Test the PayPal integration against the PayPal sandbox with real credentials, and add webhooks so an abandoned checkout completes without the reconcile job.
+- Cancellations, refunds and class capacity.
+- Move email to a background worker.
