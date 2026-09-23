@@ -103,7 +103,7 @@ export const courses: Course[] = [
   // Interfaces & ethics
   { code: 'CS 571', title: 'Building User Interfaces', short: 'Building UIs', term: 'Spring 2025', credits: 3, grade: 'AB', track: 'people', row: 0,
     about: 'Software development of user interfaces: event-driven and direct-manipulation paradigms, capturing and responding to pointing, text, touch, speech and context, and platform toolkits for web, mobile and voice interfaces.',
-    skills: ['Event-driven UIs', 'React', 'Mobile and voice interfaces', 'Design languages and layout', 'Input handling'],
+    skills: ['Event-driven UIs', 'React', 'React Native', 'Mobile and voice interfaces', 'Design languages and layout', 'Input handling'],
     used: [{ label: 'JustBook: React admin app and Capacitor mobile apps', href: '/projects/justbook/' }] },
   { code: 'CS 570', title: 'Introduction to Human-Computer Interaction', short: 'HCI', term: 'Spring 2026', credits: 3, grade: 'A', track: 'people', row: 0,
     about: 'User-centred software design: understanding user needs, designing and prototyping interface solutions, and evaluating usability, applied across several interface types in group projects.',
