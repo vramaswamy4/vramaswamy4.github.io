@@ -25,7 +25,7 @@ import review from '../../assets/projects/apelevate-review.png';
 import studyPlan from '../../assets/projects/apelevate-study-plan.png';
 
 {/* TODO: the LLM study planner shipped 2026-09-23 and is written up below. When further
-    extensions ship (e.g. remote Terraform state + plan in CI), update this page:
+    extensions ship, update this page (remote Terraform state + plan in CI shipped 2026-09-24):
     - tagline/summary/stack: add the new capability
     - add a section per extension with how it works, the decision behind it, and a screenshot
     - refresh the Stats numbers (tests, coverage) from `pytest --collect-only` and `make cov`
@@ -100,7 +100,7 @@ The one feature the 2022 version never had. A student picks a subject, an exam d
 
 `make dev` goes from a fresh clone to a running app with demo data on SQLite. `make up` runs it on PostgreSQL in Docker, which CI also boots and checks over HTTP.
 
-The demo runs on Google Cloud Run in Oregon, next to a Neon Postgres database in the same region, and scales to zero when nobody is using it. All of the infrastructure is Terraform: the service, a migration job, a nightly reset job on Cloud Scheduler, a private bucket for uploads, secrets, a budget alert, and Workload Identity Federation so GitHub Actions deploys without a stored key. After CI passes on `main`, the deploy workflow builds the image, runs migrations, rolls out the new revision and smoke-tests it.
+The demo runs on Google Cloud Run in Oregon, next to a Neon Postgres database in the same region, and scales to zero when nobody is using it. All of the infrastructure is Terraform: the service, a migration job, a nightly reset job on Cloud Scheduler, a private bucket for uploads, secrets, a budget alert, and Workload Identity Federation so GitHub Actions deploys without a stored key. After CI passes on `main`, the deploy workflow builds the image, runs migrations, rolls out the new revision and smoke-tests it. Terraform state lives in a versioned bucket, and a second workflow runs `terraform plan` on every infrastructure change and every Monday as a read-only service account, failing if the live setup has drifted from the code.
 
 ## What I learned
 
@@ -108,7 +108,6 @@ Reading my own old code was more useful than I expected. Almost every problem in
 
 ## What's next
 
-- Move the Terraform state to a versioned Cloud Storage bucket and run `terraform plan` in CI.
 - Test the PayPal integration against the PayPal sandbox with real credentials, and add webhooks so an abandoned checkout completes without the reconcile job.
 - Cancellations, refunds and class capacity.
 - Move email to a background worker.
