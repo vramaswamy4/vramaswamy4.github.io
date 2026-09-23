@@ -33,7 +33,7 @@
       "note": "Booking and payments SaaS",
       "when": "May 2025 – Present",
       "href": "/projects/justbook/",
-      "stack": "Python, Flask, SQLAlchemy, PostgreSQL, React 19, Capacitor, Stripe, Twilio, Cloudflare Workers, Render, AWS S3, pytest, Vitest, Playwright",
+      "stack": "Python, Flask, SQLAlchemy, PostgreSQL, React 19, Capacitor, Stripe, Twilio, Render, AWS S3, pytest, Playwright",
       "bullets": [
         {
           "lead": "Took a booking and payments platform from idea to production alone in 15 months,",
