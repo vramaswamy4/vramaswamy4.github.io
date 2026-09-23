@@ -83,7 +83,7 @@ export const skillGroups: SkillGroup[] = [
       { name: 'Vite', icon: 'vite', used: [JB] },
       { name: 'Astro', icon: 'astro', used: [PF, JB] },
       { name: 'htmx', icon: 'htmx', used: [AP] },
-      { name: 'React Native', icon: 'react' },
+      { name: 'React Native', icon: 'react', used: [CW] },
       { name: 'Capacitor', icon: 'capacitor', used: [JB] },
       { name: 'Playwright', icon: 'test', used: [JB] },
       { name: 'Vitest', icon: 'vitest', used: [JB] },
