@@ -3,13 +3,21 @@ import SkillIcon from './SkillIcon.astro';
 import { skillGroups } from '../data/skills';
 ---
 
+<p class="hint">Hover or tap a skill to see the projects it was used in.</p>
 <div class="groups">
   {skillGroups.map((g, gi) => (
     <div class="group" data-reveal style={`--d:${gi * 60}ms`}>
       <h3>{g.title}</h3>
       <ul>
         {g.items.map((s) => (
-          <li><SkillIcon icon={s.icon} /><span>{s.name}</span></li>
+          <li tabindex="0" aria-label={s.used ? `${s.name}: used in ${s.used.join(', ')}` : s.name}>
+            <SkillIcon icon={s.icon} /><span>{s.name}</span>
+            {s.used && (
+              <span class="used" aria-hidden="true">
+                {s.used.map((u) => <em class={`tag t-${u.toLowerCase()}`}>{u}</em>)}
+              </span>
+            )}
+          </li>
         ))}
       </ul>
     </div>
@@ -35,7 +43,33 @@ import { skillGroups } from '../data/skills';
     color: var(--text);
     transition: border-color 0.15s ease, transform 0.15s ease;
   }
-  li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  li { position: relative; cursor: default; }
+  li:hover, li:focus-visible { border-color: var(--border-strong); transform: translateY(-1px); outline: none; }
+  li:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 30%, transparent); }
+  .hint { margin: 0 0 12px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .used {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    z-index: 5;
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    background: var(--bg-raise);
+    box-shadow: var(--shadow);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  li:hover .used, li:focus-within .used, li:focus-visible .used { opacity: 1; transform: translateY(0); }
+  .tag { font-style: normal; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); color: var(--text-2); }
+  .tag.t-justbook { background: color-mix(in srgb, var(--teal) 16%, transparent); color: var(--teal); }
+  .tag.t-flagdown { background: color-mix(in srgb, var(--amber) 16%, transparent); color: var(--amber); }
+  .tag.t-apelevate { background: color-mix(in srgb, var(--violet) 16%, transparent); color: var(--violet); }
   @media (max-width: 760px) {
     .group { grid-template-columns: 1fr; padding: 20px 18px; }
     h3 { padding-top: 0; }
