@@ -171,11 +171,15 @@
       "note": "",
       "when": "2022 · 2026",
       "href": "/projects/apelevate/",
-      "stack": "Python, Django 5.2, PostgreSQL, htmx, pytest, Docker, Terraform, Google Cloud Run, GitHub Actions, PayPal",
+      "stack": "Python, Django 5.2, PostgreSQL, gpt-oss on Groq, htmx, pytest, Docker, Terraform, Google Cloud Run, GitHub Actions, PayPal",
       "bullets": [
         {
           "lead": "Recovered my 2022 high-school Django app and rebuilt it on Django 5.2:",
-          "rest": "five apps and 210 tests at 90% coverage in CI on SQLite and PostgreSQL, from 770 lines with no tests and 65 audited defects, so both main flows work end to end for the first time."
+          "rest": "five apps and 217 tests at 95% coverage in CI on SQLite and PostgreSQL, from 770 lines with no tests and 65 audited defects, so both main flows work end to end for the first time."
+        },
+        {
+          "lead": "Built an LLM study planner that cannot invent a plan:",
+          "rest": "code computes the calendar and valid ids, an open-weights model (gpt-oss-120b, OpenAI-compatible API) returns schema-validated JSON, and code checks every plan with one corrective retry; a 24-case eval suite across three models drove a prompt fix (clean plans 62% → 88%) and the model choice."
         },
         {
           "lead": "Made the token ledger impossible to corrupt from application code:",
@@ -188,6 +192,10 @@
         {
           "lead": "Locked every page behind a permission-matrix test",
           "rest": "of each URL against each role that fails when a new URL is added without a rule; POST-only state changes, and uploads type- and content-checked and stored privately."
+        },
+        {
+          "lead": "Put the whole GCP deployment in Terraform with remote versioned state",
+          "rest": "and a read-only weekly terraform plan in CI through Workload Identity Federation that fails on drift and posts the plan; applies stay manual by design."
         },
         {
           "lead": "Deployed to Google Cloud Run with Neon Postgres, all in Terraform,",
